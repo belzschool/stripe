@@ -37,7 +37,19 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const { parentName, parentEmail, childrenNames, numChildren = {} } = req.body;
+    const {
+      parentName,
+      parentEmail,
+      childrenNames,
+      invoiceName,
+      billingDetails = {},
+      numChildren = {},
+    } = req.body;
+
+    const billingCountry = String(billingDetails.country || 'BE').toUpperCase();
+    const billingStreet = String(billingDetails.street || '').trim();
+    const billingPostalCode = String(billingDetails.postalCode || '').trim();
+    const billingCity = String(billingDetails.city || '').trim();
 
     const selectedInstitutions = Object.entries(INSTITUTION_CONFIG)
       .map(([key, config]) => ({
@@ -108,14 +120,40 @@ module.exports = async (req, res) => {
 
       if (existingCustomers.data && existingCustomers.data.length > 0) {
         customer = existingCustomers.data[0];
+
+        await stripe.customers.update(
+          customer.id,
+          {
+            name: parentName,
+            address: {
+              line1: billingStreet || undefined,
+              city: billingCity || undefined,
+              postal_code: billingPostalCode || undefined,
+              country: billingCountry,
+            },
+            metadata: {
+              parentName,
+              childrenNames,
+              invoiceName: invoiceName || parentName,
+            },
+          },
+          requestOptions
+        );
       } else {
         customer = await stripe.customers.create({
           email: parentEmail,
           name: parentName,
           address: {
-            country: 'BE'
+            line1: billingStreet || undefined,
+            city: billingCity || undefined,
+            postal_code: billingPostalCode || undefined,
+            country: billingCountry,
           },
-          metadata: { parentName, childrenNames }
+          metadata: {
+            parentName,
+            childrenNames,
+            invoiceName: invoiceName || parentName,
+          }
         }, requestOptions);
       }
 
@@ -123,7 +161,15 @@ module.exports = async (req, res) => {
         payment_method_types: ['sepa_debit'],
         mode: 'subscription',
         customer: customer.id,
+        customer_update: {
+          address: 'auto',
+          name: 'auto',
+        },
+        payment_method_collection: 'if_required',
         billing_address_collection: 'required',
+        invoice_creation: {
+          enabled: true,
+        },
         locale: 'nl',
 
         line_items: [{

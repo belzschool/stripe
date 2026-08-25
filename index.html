@@ -79,6 +79,14 @@
       outline: none;
       transition: border-color 0.2s;
     }
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .full-width {
+      width: 100%;
+    }
     input {
       margin-bottom: 18px;
     }
@@ -138,6 +146,30 @@
 
       <label>E-mailadres</label>
       <input type="email" id="parentEmail" placeholder="voorbeeld@email.com" required>
+
+      <h3>Factuurgegevens</h3>
+      <label>Factuurnaam</label>
+      <input type="text" id="invoiceName" placeholder="Naam op factuur" required>
+
+      <label>Adres</label>
+      <input type="text" id="billingStreet" placeholder="Straat + huisnummer" required>
+
+      <div class="two-col">
+        <div>
+          <label>Postcode</label>
+          <input type="text" id="billingPostalCode" placeholder="1234" required>
+        </div>
+        <div>
+          <label>Plaats</label>
+          <input type="text" id="billingCity" placeholder="Gemeente" required>
+        </div>
+      </div>
+
+      <label>Land</label>
+      <select id="billingCountry" required>
+        <option value="BE">België</option>
+        <option value="NL">Nederland</option>
+      </select>
 
       <h3>Aantal kinderen</h3>
       <div class="field-row">
@@ -208,6 +240,13 @@
       const payload = {
         parentName: document.getElementById('parentName').value,
         parentEmail: document.getElementById('parentEmail').value,
+        invoiceName: document.getElementById('invoiceName').value,
+        billingDetails: {
+          street: document.getElementById('billingStreet').value,
+          postalCode: document.getElementById('billingPostalCode').value,
+          city: document.getElementById('billingCity').value,
+          country: document.getElementById('billingCountry').value,
+        },
         numChildren: {
           kleuters: parseInt(document.getElementById('numKleuters').value),
           lagereSchool: parseInt(document.getElementById('numLagereSchool').value),
