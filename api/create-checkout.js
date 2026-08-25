@@ -69,35 +69,45 @@ module.exports = async (req, res) => {
 
     if (missingAccountIds.length) {
       return res.status(500).json({
-        error: `Stripe account missing for: ${missingAccountIds.join(', ')}`,
+        error: `Stripe-account ontbreekt voor: ${missingAccountIds.join(', ')}`,
       });
     }
 
+    // Billing anchor voor 1 september 2026
     const billingAnchor = Math.floor(new Date('2026-09-01T00:00:00Z').getTime() / 1000);
-
-    let customer;
-    const existingCustomers = await contextStripe.customers.list({
-      email: parentEmail,
-      limit: 1
-    });
-
-    if (existingCustomers.data && existingCustomers.data.length > 0) {
-      customer = existingCustomers.data[0];
-    } else {
-      customer = await contextStripe.customers.create({
-        email: parentEmail,
-        name: parentName,
-        metadata: { parentName, childrenNames }
-      });
-    }
-
     const checkoutSessions = [];
 
+    // Loop door elke geselecteerde school en maak de sessie aan BINNEN die specifieke sub-account
     for (const institution of selectedInstitutions) {
-      const session = await contextStripe.checkout.sessions.create({
+      
+      // Optie-object om Stripe te vertellen in welk sub-account we werken
+      const subAccountOptions = {
+        stripeAccount: institution.accountId
+      };
+
+      // Zoek of de klant al bestaat BINNEN dit specifieke sub-account
+      let customer;
+      const existingCustomers = await stripe.customers.list(
+        { email: parentEmail, limit: 1 }, 
+        subAccountOptions
+      );
+      
+      if (existingCustomers.data && existingCustomers.data.length > 0) {
+        customer = existingCustomers.data[0]; 
+      } else {
+        // Bestaat nog niet? Maak de klant aan in dit specifieke sub-account
+        customer = await stripe.customers.create({
+          email: parentEmail,
+          name: parentName,
+          metadata: { parentName, childrenNames }
+        }, subAccountOptions);
+      }
+
+      // Maak de Checkout Session aan direct binnen het sub-account
+      const session = await stripe.checkout.sessions.create({
         payment_method_types: ['sepa_debit'],
         mode: 'subscription',
-        customer: customer.id,
+        customer: customer.id, 
         billing_address_collection: 'required',
         locale: 'nl',
 
@@ -106,19 +116,13 @@ module.exports = async (req, res) => {
             currency: 'eur',
             product_data: {
               name: `${institution.label} – ${institution.count} kind${institution.count > 1 ? 'eren' : ''}`,
-              description: `Maandelijks schoolgeld | ${institution.destinationName} | Kinderen: ${childrenNames}`,
+              description: `Maandelijks schoolgeld | Kinderen: ${childrenNames}`,
             },
             unit_amount: institution.priceCents * institution.count,
             recurring: { interval: 'month' },
           },
           quantity: 1,
         }],
-
-        payment_intent_data: {
-          transfer_data: {
-            destination: institution.accountId,
-          },
-        },
 
         subscription_data: {
           billing_cycle_anchor: billingAnchor,
@@ -127,20 +131,14 @@ module.exports = async (req, res) => {
             parentName,
             childrenNames,
             institution: institution.label,
-            destinationName: institution.destinationName,
-            accountId: institution.accountId,
             totalChildren: String(num),
             totalCents: String(totalCents),
-            kleuters: String(numChildren.kleuters || 0),
-            lagereSchool: String(numChildren.lagereSchool || 0),
-            middelbar: String(numChildren.middelbar || 0),
-            mipiOilelim: String(numChildren.mipiOilelim || 0),
           },
         },
 
         success_url: `${req.headers.origin}/success.html`,
         cancel_url: `${req.headers.origin}/`,
-      });
+      }, subAccountOptions); // Foutloos uitgevoerd binnen het juiste sub-account
 
       checkoutSessions.push({
         institution: institution.key,
@@ -151,7 +149,7 @@ module.exports = async (req, res) => {
       });
     }
 
-    // FIXED: Properly return array indices to match your single/multi routing links
+    // Geef de link(s) netjes terug aan de frontend queue
     if (checkoutSessions.length === 1) {
       return res.json({ url: checkoutSessions[0].url, session: checkoutSessions[0] });
     }
