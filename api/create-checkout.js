@@ -1,13 +1,8 @@
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
-const contextStripe = stripe.withRequestOptions({
-  stripeContext: "org_6VD7dod49CuS5NX9j1v52MS",
-});
-
 const STRIPE_ACCOUNT_BENOS_BELZ = "acct_1U3j1hV05DBqyUIY"
 const STRIPE_ACCOUNT_MIDDELBAR = "acct_1U3jruV05FDr8CDq"
 const STRIPE_ACCOUNT_GAN = "acct_1U3jjIV05EEmruZj"
-const STRIPE_ACCOUNT_MAIN = "org_6VD7dod49CuS5NX9j1v52MS"
 
 const INSTITUTION_CONFIG = {
   kleuters: {
@@ -77,37 +72,32 @@ module.exports = async (req, res) => {
     const billingAnchor = Math.floor(new Date('2026-09-01T00:00:00Z').getTime() / 1000);
     const checkoutSessions = [];
 
-    // Loop door elke geselecteerde school en maak de sessie aan BINNEN die specifieke sub-account
+    // Loop door elke geselecteerde school en maak de sessie aan binnen het juiste sub-account
     for (const institution of selectedInstitutions) {
-      
-      // Optie-object om Stripe te vertellen in welk sub-account we werken
-      const subAccountOptions = {
-        stripeAccount: institution.accountId
+      const requestOptions = {
+        stripeAccount: institution.accountId,
       };
 
-      // Zoek of de klant al bestaat BINNEN dit specifieke sub-account
       let customer;
       const existingCustomers = await stripe.customers.list(
-        { email: parentEmail, limit: 1 }, 
-        subAccountOptions
+        { email: parentEmail, limit: 1 },
+        requestOptions
       );
-      
+
       if (existingCustomers.data && existingCustomers.data.length > 0) {
-        customer = existingCustomers.data[0]; 
+        customer = existingCustomers.data[0];
       } else {
-        // Bestaat nog niet? Maak de klant aan in dit specifieke sub-account
         customer = await stripe.customers.create({
           email: parentEmail,
           name: parentName,
           metadata: { parentName, childrenNames }
-        }, subAccountOptions);
+        }, requestOptions);
       }
 
-      // Maak de Checkout Session aan direct binnen het sub-account
       const session = await stripe.checkout.sessions.create({
         payment_method_types: ['sepa_debit'],
         mode: 'subscription',
-        customer: customer.id, 
+        customer: customer.id,
         billing_address_collection: 'required',
         locale: 'nl',
 
@@ -124,6 +114,12 @@ module.exports = async (req, res) => {
           quantity: 1,
         }],
 
+        payment_intent_data: {
+          transfer_data: {
+            destination: institution.accountId,
+          },
+        },
+
         subscription_data: {
           billing_cycle_anchor: billingAnchor,
           proration_behavior: 'none',
@@ -131,6 +127,8 @@ module.exports = async (req, res) => {
             parentName,
             childrenNames,
             institution: institution.label,
+            destinationName: institution.destinationName,
+            accountId: institution.accountId,
             totalChildren: String(num),
             totalCents: String(totalCents),
           },
@@ -138,7 +136,7 @@ module.exports = async (req, res) => {
 
         success_url: `${req.headers.origin}/success.html`,
         cancel_url: `${req.headers.origin}/`,
-      }, subAccountOptions); // Foutloos uitgevoerd binnen het juiste sub-account
+      }, requestOptions);
 
       checkoutSessions.push({
         institution: institution.key,
