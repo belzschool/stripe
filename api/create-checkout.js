@@ -1,5 +1,6 @@
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY, {
+  stripeContext: "org_6VD7dod49CuS5NX9j1v52MS" // e.g. acct_1234YOURMASTER
+});
 const INSTITUTION_CONFIG = {
   kleuters: {
     label: 'Kleuters',
