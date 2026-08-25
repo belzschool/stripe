@@ -8,7 +8,7 @@
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: 'Segoe UI', sans-serif;
-      background: #f5f7fa;
+      background: #ebeef2;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -18,66 +18,73 @@
     .card {
       background: white;
       border-radius: 12px;
-      padding: 40px;
+      padding: 24px 24px 18px;
       max-width: 480px;
       width: 100%;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      box-shadow: 0 8px 24px rgba(1, 89, 137, 0.12);
     }
-    h1 { 
-      font-size: 24px; 
-      color: #1a1a2e; 
-      text-align: center; 
-      margin-bottom: 6px; 
+    img.header{ 
+      display: block;
+      width: 100%;
+      max-width: 480px;
+      margin: 0 auto 8px auto;
+    }
+    img.footer{ 
+      width: 100%;
+      max-width: 480px;
+      margin-top: 20px;
     }
     h3 { 
-      font-size: 18px; 
+      font-size: 17px; 
       color: #1a1a2e; 
-      margin-top: 10px; 
-      margin-bottom: 12px; 
+      margin-top: 8px; 
+      margin-bottom: 10px; 
     }
     .subtitle { 
       color: #666; 
       font-size: 14px; 
-      margin-bottom: 28px; 
+      margin-top: 0;
+      margin-bottom: 16px; 
       text-align: center; 
     }
     .info-box {
-      background: #f0f7ff;
+      background: #edf3f7;
       border-radius: 8px;
-      padding: 16px;
-      margin-bottom: 24px;
-      font-size: 14px;
-      color: #333;
-      line-height: 1.7;
+      padding: 12px 14px;
+      margin-bottom: 18px;
+      font-size: 13px;
+      color: #1d2b36;
+      line-height: 1.5;
     }
     .info-box strong { 
-      color: #1a73e8; 
+      color: #015989; 
     }
     label { 
       display: block; 
-      font-size: 14px; 
+      font-size: 13px; 
       font-weight: 600; 
       color: #333; 
-      margin-bottom: 6px; 
+      margin-bottom: 5px; 
     }
     .field-row {
       display: flex;
       align-items: center;
-      gap: 12px;
-      margin-bottom: 18px;
+      gap: 10px;
+      margin-bottom: 12px;
     }
     .field-row label {
-      flex: 0 0 160px;
+      flex: 0 0 145px;
       margin-bottom: 0;
     }
     input, select {
       width: 100%;
-      padding: 12px 14px;
-      border: 1.5px solid #ddd;
+      padding: 10px 12px;
+      border: 1.5px solid #d4dbe2;
       border-radius: 8px;
-      font-size: 15px;
+      font-size: 14px;
       outline: none;
-      transition: border-color 0.2s;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      background: #f9fafb;
     }
     .two-col {
       display: grid;
@@ -88,10 +95,11 @@
       width: 100%;
     }
     input {
-      margin-bottom: 18px;
+      margin-bottom: 12px;
     }
     input:focus, select:focus { 
-      border-color: #1a73e8; 
+      border-color: #992678; 
+      box-shadow: 0 0 0 3px rgba(153, 38, 120, 0.12);
     }
     .total-box {
       background: #e8f5e9;
@@ -105,18 +113,20 @@
     }
     button {
       width: 100%;
-      padding: 14px;
-      background: #1a73e8;
+      padding: 12px 14px;
+      background: #015989;
       color: white;
       border: none;
       border-radius: 8px;
-      font-size: 16px;
+      font-size: 15px;
       font-weight: 600;
       cursor: pointer;
-      transition: background 0.2s;
+      transition: background 0.2s, transform 0.2s;
+      margin-top: 12px;
     }
     button:hover { 
-      background: #1558b0; 
+      background: #992678;
+      transform: translateY(-1px);
     }
     button:disabled { 
       background: #aaa; 
@@ -128,15 +138,35 @@
       text-align: center; 
       margin-top: 16px; 
     }
+    .copyright { 
+      font-size: 15px; 
+      color: #aaa; 
+      text-align: center; 
+      margin-top: 12px; 
+    }
+    .quick {
+      color: #015989;
+      font-family: "Montserrat", sans-serif;
+      font-optical-sizing: auto;
+      font-weight: 800;
+      font-style: normal;
+   }
+   .click {
+      color: #992678;
+      font-family: "Montserrat", sans-serif;
+      font-optical-sizing: auto;
+      font-weight: 400;
+      font-style: normal;
+   }
   </style>
 </head>
 <body>
   <div class="card">
-    <h1>🏫 Belz School</h1>
+    <img src="./img/header.png" alt="Belz School Logo" class="header">
     <p class="subtitle">Inschrijving schooljaar 2026–2027</p>
 
     <div class="info-box">
-      De betaling wordt automatisch op de eerste dag vean de maand afgeschreven.
+      Deze betaling wordt automatisch op de eerste dag vean de maand afgeschreven.
     </div>
 
     <form id="form">
@@ -220,8 +250,10 @@
       <button type="submit" id="btn">Doorgaan naar betaling →</button>
     </form>
 
+    <img src="./img/footer.png" alt="Belz School Footer" class="footer">
+
     <p class="footer-note">🔒 Beveiligde betaling via Stripe</p>
-    <p>&copy; QuickClick 2026</p>
+    <p class="copyright"><strong>&copy;</strong> <span class="quick">Quick</span><span class="click">Click</span> 2026</p>
   </div>
 
   <script>
