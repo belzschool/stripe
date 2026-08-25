@@ -41,9 +41,9 @@ module.exports = async (req, res) => {
   try {
     const { parentName, parentEmail, childrenNames, numChildren = {} } = req.body;
     
-    // FIXED: Use snake_case for the request options header parameter object
+    // Explicitly configure camelCase context parameter option for the Node SDK
     const requestOptions = {
-      stripe_context: STRIPE_ACCOUNT_MAIN,
+      stripeContext: STRIPE_ACCOUNT_MAIN,
     };
 
     const selectedInstitutions = Object.entries(INSTITUTION_CONFIG)
@@ -77,7 +77,7 @@ module.exports = async (req, res) => {
 
     const billingAnchor = Math.floor(new Date('2026-09-01T00:00:00Z').getTime() / 1000);
 
-    // FIXED: Combined query filters and list params into the 1st argument block to resolve signature crash
+    // FIXED: Separated filters and options into separate arguments to prevent SDK crash
     let customer;
     const existingCustomers = await stripe.customers.list(
       { email: parentEmail, limit: 1 }, 
@@ -85,6 +85,7 @@ module.exports = async (req, res) => {
     );
     
     if (existingCustomers.data && existingCustomers.data.length > 0) {
+      // FIXED: Added array index 0 modifier to isolate the direct customer object profile
       customer = existingCustomers.data[0]; 
     } else {
       customer = await stripe.customers.create({
@@ -151,7 +152,7 @@ module.exports = async (req, res) => {
       });
     }
 
-    // FIXED: Properly return object at index 0 for single subscriptions to prevent frontend routing failures
+    // FIXED: Corrected array index accessor for single checkout routing returns
     if (checkoutSessions.length === 1) {
       return res.json({ url: checkoutSessions[0].url, session: checkoutSessions[0] });
     }
