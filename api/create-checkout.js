@@ -71,12 +71,14 @@ module.exports = async (req, res) => {
     const existingCustomers = await stripe.customers.list({ email: parentEmail, limit: 1 });
     
     if (existingCustomers.data.length > 0) {
-      customer = existingCustomers.data[0];
+      // Grab the single customer object from the index array
+      customer = existingCustomers.data[0]; 
     } else {
+      // Explicit 'else' block ensures clean variable fallbacks
       customer = await stripe.customers.create({
-      email: parentEmail,
-      name: parentName,
-      metadata: { parentName, childrenNames }
+        email: parentEmail,
+        name: parentName,
+        metadata: { parentName, childrenNames }
       });
     }
 
