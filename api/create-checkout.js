@@ -1,35 +1,40 @@
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY, {
-  stripeContext: "org_6VD7dod49CuS5NX9j1v52MS" // e.g. acct_1234YOURMASTER
-});
+// 1. Initialize Stripe with your Secret Key ONLY to avoid boot-time syntax errors
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+
+const STRIPE_ACCOUNT_BENOS_BELZ = "acct_1U3j1hV05DBqyUIY"
+const STRIPE_ACCOUNT_MIDDELBAR = "acct_1U3jruV05FDr8CDq"
+const STRIPE_ACCOUNT_GAN = "acct_1U3jjIV05EEmruZj"
+const STRIPE_ACCOUNT_MAIN = "org_6VD7dod49CuS5NX9j1v52MS"
+
 const INSTITUTION_CONFIG = {
   kleuters: {
     label: 'Kleuters',
-    accountId: "acct_1U3j1hV05DBqyUIY",
+    accountId: STRIPE_ACCOUNT_BENOS_BELZ,
     priceCents: Number(process.env.PRICE_KLEUTERS || 17000),
     destinationName: 'Benos Belz',
   },
   lagereSchool: {
     label: 'Lagere School',
-    accountId: "acct_1U3j1hV05DBqyUIY",
+    accountId: STRIPE_ACCOUNT_BENOS_BELZ,
     priceCents: Number(process.env.PRICE_LAGERE || 18500),
     destinationName: 'Benos Belz',
   },
   middelbar: {
     label: 'Middelbaar',
-    accountId: "acct_1U3jruV05FDr8CDq",
+    accountId: STRIPE_ACCOUNT_MIDDELBAR,
     priceCents: Number(process.env.PRICE_MIDDELBAR || 20000),
     destinationName: 'Middelbar',
   },
   mipiOilelim: {
     label: 'Mipi Oilelim',
-    accountId: "acct_1U3jjIV05EEmruZj",
+    accountId: STRIPE_ACCOUNT_GAN,
     priceCents: Number(process.env.PRICE_MIPI || 22000),
     destinationName: 'Gan',
   },
 };
 
 module.exports = async (req, res) => {
-  // Catch early non-POST requests cleanly
+  // Gracefully handle any invalid HTTP request methods
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -37,6 +42,11 @@ module.exports = async (req, res) => {
   try {
     const { parentName, parentEmail, childrenNames, numChildren = {} } = req.body;
     
+    // Config option object explicitly containing the Org Context mapping
+    const requestOptions = {
+      stripeContext: STRIPE_ACCOUNT_MAIN
+    };
+
     const selectedInstitutions = Object.entries(INSTITUTION_CONFIG)
       .map(([key, config]) => ({
         key,
@@ -68,22 +78,23 @@ module.exports = async (req, res) => {
 
     const billingAnchor = Math.floor(new Date('2026-09-01T00:00:00Z').getTime() / 1000);
 
-    // Safely query or build unified platform customer profile
+    // 2. Fetch or create customer, applying context via requestOptions
     let customer;
-    const existingCustomers = await stripe.customers.list({ email: parentEmail, limit: 1 });
+    const existingCustomers = await stripe.customers.list({ email: parentEmail, limit: 1 }, requestOptions);
     
-    if (existingCustomers.data.length > 0) {
-      customer = existingCustomers.data[0]; 
+    if (existingCustomers.data && existingCustomers.data.length > 0) {
+      customer = existingCustomers.data[0]; // Access the first index correctly
     } else {
       customer = await stripe.customers.create({
         email: parentEmail,
         name: parentName,
         metadata: { parentName, childrenNames }
-      });
+      }, requestOptions);
     }
 
     const checkoutSessions = [];
 
+    // 3. Create individual school checkouts, passing context into each loop request
     for (const institution of selectedInstitutions) {
       const session = await stripe.checkout.sessions.create({
         payment_method_types: ['sepa_debit'],
@@ -128,7 +139,7 @@ module.exports = async (req, res) => {
 
         success_url: `${req.headers.origin}/success.html`,
         cancel_url: `${req.headers.origin}/`,
-      });
+      }, requestOptions); // Context injected safely here
 
       checkoutSessions.push({
         institution: institution.key,
@@ -139,7 +150,7 @@ module.exports = async (req, res) => {
       });
     }
 
-    // FIXED: Properly access array item [0] to avoid runtime errors
+    // 4. Return correct JSON structure based on final count array size
     if (checkoutSessions.length === 1) {
       return res.json({ url: checkoutSessions[0].url, session: checkoutSessions[0] });
     }
@@ -148,6 +159,7 @@ module.exports = async (req, res) => {
 
   } catch (err) {
     console.error('Stripe handler critical error:', err.message);
+    // Secure block guarantees only clean valid JSON format goes to client
     return res.status(500).json({ error: err.message });
   }
 };
