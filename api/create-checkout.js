@@ -33,40 +33,41 @@ module.exports = async (req, res) => {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { parentName, parentEmail, childrenNames, numChildren = {} } = req.body;
-  const selectedInstitutions = Object.entries(INSTITUTION_CONFIG).map(([key, config]) => ({
-    key,
-    ...config,
-    count: Number(numChildren[key] || 0),
-  })).filter((institution) => institution.count > 0);
-
-  const num = selectedInstitutions.reduce((total, institution) => total + institution.count, 0);
-
-  if (!num || num < 1 || num > 10 || !parentEmail || !selectedInstitutions.length) {
-    return res.status(400).json({ error: 'Ongeldige invoer' });
-  }
-
-  const totalCents = selectedInstitutions.reduce(
-    (total, institution) => total + (institution.priceCents * institution.count),
-    0
-  );
-
-  const missingAccountIds = selectedInstitutions
-    .filter((institution) => !institution.accountId)
-    .map((institution) => institution.label);
-
-  if (missingAccountIds.length) {
-    return res.status(500).json({
-      error: `Stripe account missing for: ${missingAccountIds.join(', ')}`,
-    });
-  }
-
-  // September 1st, 2026 Billing Anchor
-  const billingAnchor = Math.floor(new Date('2026-09-01T00:00:00Z').getTime() / 1000);
-
   try {
-    // 1. Proactively find or create a Customer on the main platform level
-    // This aggregates all their upcoming subscriptions to a unified profile
+    const { parentName, parentEmail, childrenNames, numChildren = {} } = req.body;
+    
+    const selectedInstitutions = Object.entries(INSTITUTION_CONFIG)
+      .map(([key, config]) => ({
+        key,
+        ...config,
+        count: Number(numChildren[key] || 0),
+      }))
+      .filter((institution) => institution.count > 0);
+
+    const num = selectedInstitutions.reduce((total, institution) => total + institution.count, 0);
+
+    if (!num || num < 1 || num > 10 || !parentEmail || !selectedInstitutions.length) {
+      return res.status(400).json({ error: 'Ongeldige invoer' });
+    }
+
+    const totalCents = selectedInstitutions.reduce(
+      (total, institution) => total + (institution.priceCents * institution.count),
+      0
+    );
+
+    const missingAccountIds = selectedInstitutions
+      .filter((institution) => !institution.accountId)
+      .map((institution) => institution.label);
+
+    if (missingAccountIds.length) {
+      return res.status(500).json({
+        error: `Stripe account missing for: ${missingAccountIds.join(', ')}`,
+      });
+    }
+
+    const billingAnchor = Math.floor(new Date('2026-09-01T00:00:00Z').getTime() / 1000);
+
+    // FIXED: Safely query the existing customer profile
     let customer;
     const existingCustomers = await stripe.customers.list({ email: parentEmail, limit: 1 });
     
@@ -85,11 +86,10 @@ module.exports = async (req, res) => {
     const checkoutSessions = [];
 
     for (const institution of selectedInstitutions) {
-      // 2. Build the Checkout Session natively on the platform account
       const session = await stripe.checkout.sessions.create({
         payment_method_types: ['sepa_debit'],
         mode: 'subscription',
-        customer: customer.id, // Explicitly pass the main platform customer ID
+        customer: customer.id, 
         billing_address_collection: 'required',
         locale: 'nl',
 
@@ -106,12 +106,11 @@ module.exports = async (req, res) => {
           quantity: 1,
         }],
 
-        // FIXED: For subscription mode, transfer rules MUST live inside subscription_data
         subscription_data: {
           billing_cycle_anchor: billingAnchor,
           proration_behavior: 'none',
           transfer_data: {
-            destination: institution.accountId, // Automatically routes the monthly payout here!
+            destination: institution.accountId, 
           },
           metadata: {
             parentName,
@@ -146,8 +145,10 @@ module.exports = async (req, res) => {
     }
 
     return res.json({ urls: checkoutSessions.map((item) => item.url), sessions: checkoutSessions });
+
   } catch (err) {
-    console.error('Stripe error:', err.message);
-    res.status(500).json({ error: err.message });
+    // Catch-all block guaranteed to always return clean valid JSON format back to your frontend
+    console.error('Stripe handler critical error:', err.message);
+    return res.status(500).json({ error: err.message });
   }
-}
+};
