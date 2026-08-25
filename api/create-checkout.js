@@ -1,6 +1,11 @@
 // 1. Initialize Stripe with your Secret Key ONLY to avoid boot-time syntax errors
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
+// FIXED: Define the context-bound client globally so it is accessible inside the request handler
+const contextStripe = stripe.withRequestOptions({
+  stripeContext: process.env.STRIPE_MAIN_PLATFORM_ACCOUNT_ID
+});
+
 const STRIPE_ACCOUNT_BENOS_BELZ = "acct_1U3j1hV05DBqyUIY"
 const STRIPE_ACCOUNT_MIDDELBAR = "acct_1U3jruV05FDr8CDq"
 const STRIPE_ACCOUNT_GAN = "acct_1U3jjIV05EEmruZj"
@@ -41,10 +46,7 @@ module.exports = async (req, res) => {
   try {
     const { parentName, parentEmail, childrenNames, numChildren = {} } = req.body;
     
-    // Explicitly configure camelCase context parameter option for the Node SDK
-    const requestOptions = {
-      stripeContext: STRIPE_ACCOUNT_MAIN,
-    };
+    // REMOVED: contextStripe initialization is removed from here to prevent scoping bugs
 
     const selectedInstitutions = Object.entries(INSTITUTION_CONFIG)
       .map(([key, config]) => ({
