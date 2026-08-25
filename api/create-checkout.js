@@ -61,6 +61,7 @@ module.exports = async (req, res) => {
       error: `Stripe account missing for: ${missingAccountIds.join(', ')}`,
     });
   }
+
   
 
   const billingAnchor = Math.floor(new Date('2026-09-01T00:00:00Z').getTime() / 1000);
