@@ -186,8 +186,6 @@
         </select>
       </div>
 
-      <div class="total-box" id="totalDisplay">Maandelijks totaal: €0</div>
-
       <button type="submit" id="btn">Doorgaan naar betaling →</button>
     </form>
 
@@ -200,20 +198,6 @@
     const prcLagereSchool = 190;
     const prcMiddelbar = 250;
     const prcMipiOilelim = 200;
-
-    //update total on change
-    const selects = document.querySelectorAll('select');
-    const totalDisplay = document.getElementById('totalDisplay');
-    selects.forEach(select => {
-      select.addEventListener('change', () => {
-        const numKleuters = parseInt(document.getElementById('numKleuters').value);
-        const numLagereSchool = parseInt(document.getElementById('numLagereSchool').value);
-        const numMiddelbar = parseInt(document.getElementById('numMiddelbar').value);
-        const numMipiOilelim = parseInt(document.getElementById('numMipiOilelim').value);
-        const totalprice = (numKleuters * prcKleuters) + (numLagereSchool * prcLagereSchool) + (numMiddelbar * prcMiddelbar) + (numMipiOilelim * prcMipiOilelim);
-        totalDisplay.textContent = `Maandelijks totaal: €${totalprice}`;
-      });
-    });
 
     document.getElementById('form').addEventListener('submit', async (e) => {
       e.preventDefault();
