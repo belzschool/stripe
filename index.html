@@ -225,19 +225,15 @@
   </div>
 
   <script>
-    // pricemap
+    const STORAGE_KEY = 'belz_school_checkout_form';
+
     const prcKleuters = 170;
     const prcLagereSchool = 190;
     const prcMiddelbar = 250;
     const prcMipiOilelim = 200;
 
-    document.getElementById('form').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const btn = document.getElementById('btn');
-      btn.disabled = true;
-      btn.textContent = 'Verwerken...';
-
-      const payload = {
+    function getFormState() {
+      return {
         parentName: document.getElementById('parentName').value,
         parentEmail: document.getElementById('parentEmail').value,
         invoiceName: document.getElementById('invoiceName').value,
@@ -248,12 +244,58 @@
           country: document.getElementById('billingCountry').value,
         },
         numChildren: {
-          kleuters: parseInt(document.getElementById('numKleuters').value),
-          lagereSchool: parseInt(document.getElementById('numLagereSchool').value),
-          middelbar: parseInt(document.getElementById('numMiddelbar').value),
-          mipiOilelim: parseInt(document.getElementById('numMipiOilelim').value),
+          kleuters: parseInt(document.getElementById('numKleuters').value, 10) || 0,
+          lagereSchool: parseInt(document.getElementById('numLagereSchool').value, 10) || 0,
+          middelbar: parseInt(document.getElementById('numMiddelbar').value, 10) || 0,
+          mipiOilelim: parseInt(document.getElementById('numMipiOilelim').value, 10) || 0,
         },
       };
+    }
+
+    function saveFormState() {
+      const state = getFormState();
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+
+    function restoreFormState() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+
+        if (saved.parentName) document.getElementById('parentName').value = saved.parentName;
+        if (saved.parentEmail) document.getElementById('parentEmail').value = saved.parentEmail;
+        if (saved.invoiceName) document.getElementById('invoiceName').value = saved.invoiceName;
+
+        if (saved.billingDetails) {
+          if (saved.billingDetails.street) document.getElementById('billingStreet').value = saved.billingDetails.street;
+          if (saved.billingDetails.postalCode) document.getElementById('billingPostalCode').value = saved.billingDetails.postalCode;
+          if (saved.billingDetails.city) document.getElementById('billingCity').value = saved.billingDetails.city;
+          if (saved.billingDetails.country) document.getElementById('billingCountry').value = saved.billingDetails.country;
+        }
+
+        if (saved.numChildren) {
+          if (saved.numChildren.kleuters !== undefined) document.getElementById('numKleuters').value = String(saved.numChildren.kleuters);
+          if (saved.numChildren.lagereSchool !== undefined) document.getElementById('numLagereSchool').value = String(saved.numChildren.lagereSchool);
+          if (saved.numChildren.middelbar !== undefined) document.getElementById('numMiddelbar').value = String(saved.numChildren.middelbar);
+          if (saved.numChildren.mipiOilelim !== undefined) document.getElementById('numMipiOilelim').value = String(saved.numChildren.mipiOilelim);
+        }
+      } catch (err) {
+        console.warn('Could not restore saved form data', err);
+      }
+    }
+
+    restoreFormState();
+    document.getElementById('form').addEventListener('input', saveFormState);
+    document.getElementById('form').addEventListener('change', saveFormState);
+
+    document.getElementById('form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      saveFormState();
+
+      const btn = document.getElementById('btn');
+      btn.disabled = true;
+      btn.textContent = 'Verwerken...';
+
+      const payload = getFormState();
 
       try {
         const res = await fetch('/api/create-checkout', {
@@ -270,23 +312,17 @@
 
         // Standard single school submission
         if (data.url) {
-          sessionStorage.removeItem('stripe_checkout_queue'); // Clear any old queue
+          sessionStorage.removeItem('stripe_checkout_queue');
           window.location.href = data.url;
           return;
         }
 
         // Multi-school submission
         if (data.urls && data.urls.length > 0) {
-          // Save all URLs to browser memory
           sessionStorage.setItem('stripe_checkout_queue', JSON.stringify(data.urls));
-      
-          // Shift out the first URL and navigate to it
           const nextQueue = [...data.urls];
           const firstUrl = nextQueue.shift();
-      
-          // Update browser memory with remaining targets
           sessionStorage.setItem('stripe_checkout_queue', JSON.stringify(nextQueue));
-      
           window.location.href = firstUrl;
         } 
         else {
@@ -294,7 +330,6 @@
         }
       } 
       catch (err) {
-        // Dynamically prints exact backend crash reasoning inside an alert window
         console.error(err);
         alert(`Er is een fout opgetreden: ${err.message}`);
         btn.disabled = false;
