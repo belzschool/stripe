@@ -29,6 +29,12 @@
       text-align: center; 
       margin-bottom: 6px; 
     }
+    h3 { 
+      font-size: 18px; 
+      color: #1a1a2e; 
+      margin-top: 10px; 
+      margin-bottom: 12px; 
+    }
     .subtitle { 
       color: #666; 
       font-size: 14px; 
@@ -106,18 +112,22 @@
 </head>
 <body>
   <div class="card">
-    <h1>🏫 Kleuters School</h1>
+    <h1>🏫 Belz School</h1>
     <p class="subtitle">Inschrijving schooljaar 2026–2027</p>
 
     <div class="info-box">
       📅 Eerste betaling: <strong>september 2026</strong> (volledig maandbedrag)<br>
       🔄 Daarna automatisch op de <strong>1e van iedere maand</strong><br>
-      💶 <strong>€170 per kind per maand</strong> via SEPA-incasso
+      💶 <strong>Prijs per kind per maand</strong> via SEPA-incasso
     </div>
 
     <form id="form">
-      <label>Naam ouder</label>
-      <input type="text" id="parentName" placeholder="Voor- en achternaam" required>
+      <h3>Ouder informatie</h3>
+      <label>Achternaam ouder</label>
+      <input type="text" id="parentName" placeholder="Achternaam" required>
+      
+      <label>Voornaam ouder</label>
+      <input type="text" id="parentFirstName" placeholder="Voornaam" required>
 
       <label>E-mailadres</label>
       <input type="email" id="parentEmail" placeholder="voorbeeld@email.com" required>
@@ -125,16 +135,45 @@
       <label>Namen van de kinderen</label>
       <input type="text" id="childrenNames" placeholder="voornaam/en" required>
 
-      <label>Aantal kinderen</label>
-      <select id="numChildren">
+      <h3>Aantal kinderen</h3>
+      <label>Kleuters</label>
+      <select id="numKleuters">
+        <option value="0">0 kinderen</option>
         <option value="1">1 kind – €170/maand</option>
         <option value="2">2 kinderen – €340/maand</option>
         <option value="3">3 kinderen – €510/maand</option>
         <option value="4">4 kinderen – €680/maand</option>
         <option value="5">5 kinderen – €850/maand</option>
       </select>
+      <label>Lagere School</label>
+      <select id="numLagereSchool">
+        <option value="0">0 kinderen</option>
+        <option value="1">1 kind – €185/maand</option>
+        <option value="2">2 kinderen – €370/maand</option>
+        <option value="3">3 kinderen – €555/maand</option>
+        <option value="4">4 kinderen – €740/maand</option>
+        <option value="5">5 kinderen – €925/maand</option>
+      </select>
+      <label>Middelbar</label>
+      <select id="numMiddelbar">
+        <option value="0">0 kinderen</option>
+        <option value="1">1 kind – €200/maand</option>
+        <option value="2">2 kinderen – €400/maand</option>
+        <option value="3">3 kinderen – €600/maand</option>
+        <option value="4">4 kinderen – €800/maand</option>
+        <option value="5">5 kinderen – €1000/maand</option>
+      </select>
+      <label>Mipi Oilelim</label>
+      <select id="numMipiOilelim">
+        <option value="0">0 kinderen</option>
+        <option value="1">1 kind – €220/maand</option>
+        <option value="2">2 kinderen – €440/maand</option>
+        <option value="3">3 kinderen – €660/maand</option>
+        <option value="4">4 kinderen – €880/maand</option>
+        <option value="5">5 kinderen – €1100/maand</option>
+      </select>
 
-      <div class="total-box" id="totalDisplay">Maandelijks totaal: €170</div>
+      <div class="total-box" id="totalDisplay">Maandelijks totaal: €0</div>
 
       <button type="submit" id="btn">Doorgaan naar betaling →</button>
     </form>
@@ -143,11 +182,29 @@
   </div>
 
   <script>
-    const sel = document.getElementById('numChildren');
+    const selK = document.getElementById('numKleuters');
+    const selLS = document.getElementById('numLagereSchool');
+    const selM = document.getElementById('numMiddelbar');
+    const selMO = document.getElementById('numMipiOilelim');
+
+    const institutionPricing = {
+      kleuters: 170,
+      lagereSchool: 185,
+      middelbar: 200,
+      mipiOilelim: 220,
+    };
+
     const display = document.getElementById('totalDisplay');
 
-    sel.addEventListener('change', () => {
-      display.textContent = `Maandelijks totaal: €${parseInt(sel.value) * 170}`;
+    [selK, selLS, selM, selMO].forEach((select) => {
+      select.addEventListener('change', () => {
+        display.textContent = `Maandelijks totaal: €${
+          (parseInt(selK.value) * institutionPricing.kleuters) +
+          (parseInt(selLS.value) * institutionPricing.lagereSchool) +
+          (parseInt(selM.value) * institutionPricing.middelbar) +
+          (parseInt(selMO.value) * institutionPricing.mipiOilelim)
+        }`;
+      });
     });
 
     document.getElementById('form').addEventListener('submit', async (e) => {
@@ -164,13 +221,21 @@
             parentName: document.getElementById('parentName').value,
             parentEmail: document.getElementById('parentEmail').value,
             childrenNames: document.getElementById('childrenNames').value,
-            numChildren: sel.value,
+            numChildren: {
+              kleuters: parseInt(selK.value),
+              lagereSchool: parseInt(selLS.value),
+              middelbar: parseInt(selM.value),
+              mipiOilelim: parseInt(selMO.value),
+            },
           }),
         });
 
         const data = await res.json();
         if (data.url) {
           window.location.href = data.url;
+        } else if (data.urls && data.urls.length) {
+          const firstUrl = data.urls[0];
+          window.location.href = firstUrl;
         } else {
           throw new Error(data.error);
         }
