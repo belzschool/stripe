@@ -256,6 +256,8 @@
         }
       } 
       catch (err) {
+        // Dynamically prints exact backend crash reasoning inside an alert window
+        console.error(err);
         alert(`Er is een fout opgetreden: ${err.message}`);
         btn.disabled = false;
         btn.textContent = 'Doorgaan naar betaling →';
