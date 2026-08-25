@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Belz School – Inschrijving</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f5f7fa;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 40px;
+      max-width: 480px;
+      width: 100%;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    }
+    h1 { 
+      font-size: 24px; 
+      color: #1a1a2e; 
+      text-align: center; 
+      margin-bottom: 6px; 
+    }
+    .subtitle { 
+      color: #666; 
+      font-size: 14px; 
+      margin-bottom: 28px; 
+      text-align: center; 
+    }
+    .info-box {
+      background: #f0f7ff;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 24px;
+      font-size: 14px;
+      color: #333;
+      line-height: 1.7;
+    }
+    .info-box strong { 
+      color: #1a73e8; 
+    }
+    label { 
+      display: block; 
+      font-size: 14px; 
+      font-weight: 600; 
+      color: #333; 
+      margin-bottom: 6px; 
+    }
+    input, select {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1.5px solid #ddd;
+      border-radius: 8px;
+      font-size: 15px;
+      margin-bottom: 18px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    input:focus, select:focus { 
+      border-color: #1a73e8; 
+    }
+    .total-box {
+      background: #e8f5e9;
+      border-radius: 8px;
+      padding: 14px;
+      margin-bottom: 24px;
+      text-align: center;
+      color: #2e7d32;
+      font-size: 16px;
+      font-weight: 600;
+    }
+    button {
+      width: 100%;
+      padding: 14px;
+      background: #1a73e8;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    button:hover { 
+      background: #1558b0; 
+    }
+    button:disabled { 
+      background: #aaa; 
+      cursor: not-allowed; 
+    }
+    .footer-note { 
+      font-size: 12px; 
+      color: #888; 
+      text-align: center; 
+      margin-top: 16px; 
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>🏫 Kleuters School</h1>
+    <p class="subtitle">Inschrijving schooljaar 2026–2027</p>
+
+    <div class="info-box">
+      📅 Eerste betaling: <strong>september 2026</strong> (volledig maandbedrag)<br>
+      🔄 Daarna automatisch op de <strong>1e van iedere maand</strong><br>
+      💶 <strong>€170 per kind per maand</strong> via SEPA-incasso
+    </div>
+
+    <form id="form">
+      <label>Naam ouder</label>
+      <input type="text" id="parentName" placeholder="Voor- en achternaam" required>
+
+      <label>E-mailadres</label>
+      <input type="email" id="parentEmail" placeholder="voorbeeld@email.com" required>
+
+      <label>Namen van de kinderen</label>
+      <input type="text" id="childrenNames" placeholder="voornaam/en" required>
+
+      <label>Aantal kinderen</label>
+      <select id="numChildren">
+        <option value="1">1 kind – €170/maand</option>
+        <option value="2">2 kinderen – €340/maand</option>
+        <option value="3">3 kinderen – €510/maand</option>
+        <option value="4">4 kinderen – €680/maand</option>
+        <option value="5">5 kinderen – €850/maand</option>
+      </select>
+
+      <div class="total-box" id="totalDisplay">Maandelijks totaal: €170</div>
+
+      <button type="submit" id="btn">Doorgaan naar betaling →</button>
+    </form>
+
+    <p class="footer-note">🔒 Beveiligde betaling via Stripe</p>
+  </div>
+
+  <script>
+    const sel = document.getElementById('numChildren');
+    const display = document.getElementById('totalDisplay');
+
+    sel.addEventListener('change', () => {
+      display.textContent = `Maandelijks totaal: €${parseInt(sel.value) * 170}`;
+    });
+
+    document.getElementById('form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('btn');
+      btn.disabled = true;
+      btn.textContent = 'Loading...';
+
+      try {
+        const res = await fetch('/api/create-checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            parentName: document.getElementById('parentName').value,
+            parentEmail: document.getElementById('parentEmail').value,
+            childrenNames: document.getElementById('childrenNames').value,
+            numChildren: sel.value,
+          }),
+        });
+
+        const data = await res.json();
+        if (data.url) {
+          window.location.href = data.url;
+        } else {
+          throw new Error(data.error);
+        }
+      } catch (err) {
+        alert('Er is een fout opgetreden. Probeer het opnieuw.');
+        btn.disabled = false;
+        btn.textContent = 'Doorgaan naar betaling →';
+      }
+    });
+  </script>
+</body>
+</html>
