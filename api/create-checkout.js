@@ -15,7 +15,7 @@ module.exports = async (req, res) => {
   const totalCents = 17000 * num; // €170 per kind in centen
 
   // Vaste factuurdatum: 1 oktober 2026
-  const billingAnchor = Math.floor(new Date('2026-09-01T00:00:00Z').getTime() / 1000);
+  const billingAnchor = Math.floor(new Date('2026-08-01T00:00:00Z').getTime() / 1000);
 
   try {
     const session = await stripe.checkout.sessions.create({
