@@ -182,28 +182,23 @@
   </div>
 
   <script>
-    const selK = document.getElementById('numKleuters');
-    const selLS = document.getElementById('numLagereSchool');
-    const selM = document.getElementById('numMiddelbar');
-    const selMO = document.getElementById('numMipiOilelim');
+    // pricemap
+    const prcKleuters = 170;
+    const prcLagereSchool = 185;
+    const prcMiddelbar = 200;
+    const prcMipiOilelim = 220;
 
-    const institutionPricing = {
-      kleuters: 170,
-      lagereSchool: 185,
-      middelbar: 200,
-      mipiOilelim: 220,
-    };
-
-    const display = document.getElementById('totalDisplay');
-
-    [selK, selLS, selM, selMO].forEach((select) => {
+    //update total on change
+    const selects = document.querySelectorAll('select');
+    const totalDisplay = document.getElementById('totalDisplay');
+    selects.forEach(select => {
       select.addEventListener('change', () => {
-        display.textContent = `Maandelijks totaal: €${
-          (parseInt(selK.value) * institutionPricing.kleuters) +
-          (parseInt(selLS.value) * institutionPricing.lagereSchool) +
-          (parseInt(selM.value) * institutionPricing.middelbar) +
-          (parseInt(selMO.value) * institutionPricing.mipiOilelim)
-        }`;
+        const numKleuters = parseInt(document.getElementById('numKleuters').value);
+        const numLagereSchool = parseInt(document.getElementById('numLagereSchool').value);
+        const numMiddelbar = parseInt(document.getElementById('numMiddelbar').value);
+        const numMipiOilelim = parseInt(document.getElementById('numMipiOilelim').value);
+        const totalprice = (numKleuters * prcKleuters) + (numLagereSchool * prcLagereSchool) + (numMiddelbar * prcMiddelbar) + (numMipiOilelim * prcMipiOilelim);
+        totalDisplay.textContent = `Maandelijks totaal: €${totalprice}`;
       });
     });
 
@@ -211,36 +206,60 @@
       e.preventDefault();
       const btn = document.getElementById('btn');
       btn.disabled = true;
-      btn.textContent = 'Loading...';
+      btn.textContent = 'Verwerken...';
+
+      const payload = {
+        parentName: `${document.getElementById('parentFirstName').value} ${document.getElementById('parentName').value}`.trim(),
+        parentEmail: document.getElementById('parentEmail').value,
+        childrenNames: document.getElementById('childrenNames').value,
+        numChildren: {
+          kleuters: parseInt(document.getElementById('numKleuters').value),
+          lagereSchool: parseInt(document.getElementById('numLagereSchool').value),
+          middelbar: parseInt(document.getElementById('numMiddelbar').value),
+          mipiOilelim: parseInt(document.getElementById('numMipiOilelim').value),
+        },
+      };
 
       try {
         const res = await fetch('/api/create-checkout', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            parentName: document.getElementById('parentName').value,
-            parentEmail: document.getElementById('parentEmail').value,
-            childrenNames: document.getElementById('childrenNames').value,
-            numChildren: {
-              kleuters: parseInt(selK.value),
-              lagereSchool: parseInt(selLS.value),
-              middelbar: parseInt(selM.value),
-              mipiOilelim: parseInt(selMO.value),
-            },
-          }),
+          body: JSON.stringify(payload),
         });
 
         const data = await res.json();
-        if (data.url) {
-          window.location.href = data.url;
-        } else if (data.urls && data.urls.length) {
-          const firstUrl = data.urls[0];
-          window.location.href = firstUrl;
-        } else {
+    
+        if (data.error) {
           throw new Error(data.error);
         }
-      } catch (err) {
-        alert('Er is een fout opgetreden. Probeer het opnieuw.');
+
+        // Standard single school submission
+        if (data.url) {
+          sessionStorage.removeItem('stripe_checkout_queue'); // Clear any old queue
+          window.location.href = data.url;
+          return;
+        }
+
+        // Multi-school submission
+        if (data.urls && data.urls.length > 0) {
+          // Save all URLs to browser memory
+          sessionStorage.setItem('stripe_checkout_queue', JSON.stringify(data.urls));
+      
+          // Shift out the first URL and navigate to it
+          const nextQueue = [...data.urls];
+          const firstUrl = nextQueue.shift();
+      
+          // Update browser memory with remaining targets
+          sessionStorage.setItem('stripe_checkout_queue', JSON.stringify(nextQueue));
+      
+          window.location.href = firstUrl;
+        } 
+        else {
+          throw new Error('Geen geldige sessie-URL ontvangen');
+        }
+      } 
+      catch (err) {
+        alert(`Er is een fout opgetreden: ${err.message}`);
         btn.disabled = false;
         btn.textContent = 'Doorgaan naar betaling →';
       }

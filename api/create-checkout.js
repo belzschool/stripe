@@ -33,13 +33,11 @@ module.exports = async (req, res) => {
   }
 
   const { parentName, parentEmail, childrenNames, numChildren = {} } = req.body;
-  const selectedInstitutions = Object.entries(INSTITUTION_CONFIG)
-    .map(([key, config]) => ({
-      key,
-      ...config,
-      count: Number(numChildren[key] || 0),
-    }))
-    .filter((institution) => institution.count > 0);
+  const selectedInstitutions = Object.entries(INSTITUTION_CONFIG).map(([key, config]) => ({
+    key,
+    ...config,
+    count: Number(numChildren[key] || 0),
+  })).filter((institution) => institution.count > 0);
 
   const num = selectedInstitutions.reduce((total, institution) => total + institution.count, 0);
 
@@ -62,18 +60,33 @@ module.exports = async (req, res) => {
     });
   }
 
-  
-
+  // September 1st, 2026 Billing Anchor
   const billingAnchor = Math.floor(new Date('2026-09-01T00:00:00Z').getTime() / 1000);
 
   try {
+    // 1. Proactively find or create a Customer on the main platform level
+    // This aggregates all their upcoming subscriptions to a unified profile
+    let customer;
+    const existingCustomers = await stripe.customers.list({ email: parentEmail, limit: 1 });
+    
+    if (existingCustomers.data.length > 0) {
+      customer = existingCustomers.data[0];
+    } else {
+      customer = await stripe.customers.create({
+      email: parentEmail,
+      name: parentName,
+      metadata: { parentName, childrenNames }
+      });
+    }
+
     const checkoutSessions = [];
 
     for (const institution of selectedInstitutions) {
+      // 2. Build the Checkout Session natively on the platform account
       const session = await stripe.checkout.sessions.create({
         payment_method_types: ['sepa_debit'],
         mode: 'subscription',
-        customer_email: parentEmail,
+        customer: customer.id, // Explicitly pass the main platform customer ID
         billing_address_collection: 'required',
         locale: 'nl',
 
@@ -90,15 +103,13 @@ module.exports = async (req, res) => {
           quantity: 1,
         }],
 
-        payment_intent_data: {
-          transfer_data: {
-            destination: institution.accountId,
-          },
-        },
-
+        // FIXED: For subscription mode, transfer rules MUST live inside subscription_data
         subscription_data: {
           billing_cycle_anchor: billingAnchor,
           proration_behavior: 'none',
+          transfer_data: {
+            destination: institution.accountId, // Automatically routes the monthly payout here!
+          },
           metadata: {
             parentName,
             childrenNames,
@@ -136,4 +147,4 @@ module.exports = async (req, res) => {
     console.error('Stripe error:', err.message);
     res.status(500).json({ error: err.message });
   }
-};
+}
