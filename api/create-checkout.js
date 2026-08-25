@@ -43,7 +43,7 @@ module.exports = async (req, res) => {
     
     // FIXED: Use snake_case for the request options header parameter object
     const requestOptions = {
-      stripe_context: STRIPE_MAIN_PLATFORM_ACCOUNT_ID
+      stripe_context: STRIPE_ACCOUNT_MAIN,
     };
 
     const selectedInstitutions = Object.entries(INSTITUTION_CONFIG)
