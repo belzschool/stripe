@@ -14,19 +14,19 @@ const INSTITUTION_CONFIG = {
   lagereSchool: {
     label: 'Lagere School',
     accountId: STRIPE_ACCOUNT_BENOS_BELZ,
-    priceCents: Number(18500),
+    priceCents: Number(19000),
     destinationName: 'Benos Belz',
   },
   middelbar: {
     label: 'Middelbaar',
     accountId: STRIPE_ACCOUNT_MIDDELBAR,
-    priceCents: Number(20000),
+    priceCents: Number(25000),
     destinationName: 'Middelbar',
   },
   mipiOilelim: {
     label: 'Mipi Oilelim',
     accountId: STRIPE_ACCOUNT_GAN,
-    priceCents: Number(22000),
+    priceCents: Number(20000),
     destinationName: 'Gan',
   },
 };
@@ -90,6 +90,9 @@ module.exports = async (req, res) => {
         customer = await stripe.customers.create({
           email: parentEmail,
           name: parentName,
+          address: {
+            country: 'BE'
+          },
           metadata: { parentName, childrenNames }
         }, requestOptions);
       }

@@ -60,15 +60,27 @@
       color: #333; 
       margin-bottom: 6px; 
     }
+    .field-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+    .field-row label {
+      flex: 0 0 160px;
+      margin-bottom: 0;
+    }
     input, select {
       width: 100%;
       padding: 12px 14px;
       border: 1.5px solid #ddd;
       border-radius: 8px;
       font-size: 15px;
-      margin-bottom: 18px;
       outline: none;
       transition: border-color 0.2s;
+    }
+    input {
+      margin-bottom: 18px;
     }
     input:focus, select:focus { 
       border-color: #1a73e8; 
@@ -118,7 +130,6 @@
     <div class="info-box">
       📅 Eerste betaling: <strong>september 2026</strong> (volledig maandbedrag)<br>
       🔄 Daarna automatisch op de <strong>1e van iedere maand</strong><br>
-      💶 <strong>Prijs per kind per maand</strong> via SEPA-incasso
     </div>
 
     <form id="form">
@@ -129,46 +140,51 @@
       <label>E-mailadres</label>
       <input type="email" id="parentEmail" placeholder="voorbeeld@email.com" required>
 
-      <label>Namen van de kinderen</label>
-      <input type="text" id="childrenNames" placeholder="voornaam/en" required>
-
       <h3>Aantal kinderen</h3>
-      <label>Kleuters</label>
-      <select id="numKleuters">
-        <option value="0">0 kinderen</option>
-        <option value="1">1 kind – €170/maand</option>
-        <option value="2">2 kinderen – €340/maand</option>
-        <option value="3">3 kinderen – €510/maand</option>
-        <option value="4">4 kinderen – €680/maand</option>
-        <option value="5">5 kinderen – €850/maand</option>
-      </select>
-      <label>Lagere School</label>
-      <select id="numLagereSchool">
-        <option value="0">0 kinderen</option>
-        <option value="1">1 kind – €185/maand</option>
-        <option value="2">2 kinderen – €370/maand</option>
-        <option value="3">3 kinderen – €555/maand</option>
-        <option value="4">4 kinderen – €740/maand</option>
-        <option value="5">5 kinderen – €925/maand</option>
-      </select>
-      <label>Middelbar</label>
-      <select id="numMiddelbar">
-        <option value="0">0 kinderen</option>
-        <option value="1">1 kind – €200/maand</option>
-        <option value="2">2 kinderen – €400/maand</option>
-        <option value="3">3 kinderen – €600/maand</option>
-        <option value="4">4 kinderen – €800/maand</option>
-        <option value="5">5 kinderen – €1000/maand</option>
-      </select>
-      <label>Mipi Oilelim</label>
-      <select id="numMipiOilelim">
-        <option value="0">0 kinderen</option>
-        <option value="1">1 kind – €220/maand</option>
-        <option value="2">2 kinderen – €440/maand</option>
-        <option value="3">3 kinderen – €660/maand</option>
-        <option value="4">4 kinderen – €880/maand</option>
-        <option value="5">5 kinderen – €1100/maand</option>
-      </select>
+      <div class="field-row">
+        <label for="numKleuters">Kleuters</label>
+        <select id="numKleuters">
+          <option value="0">0 kinderen</option>
+          <option value="1">1 kind – €170/maand</option>
+          <option value="2">2 kinderen – €340/maand</option>
+          <option value="3">3 kinderen – €510/maand</option>
+          <option value="4">4 kinderen – €680/maand</option>
+          <option value="5">5 kinderen – €850/maand</option>
+        </select>
+      </div>
+      <div class="field-row">
+        <label for="numLagereSchool">Lagere School</label>
+        <select id="numLagereSchool">
+          <option value="0">0 kinderen</option>
+          <option value="1">1 kind – €190/maand</option>
+          <option value="2">2 kinderen – €380/maand</option>
+          <option value="3">3 kinderen – €570/maand</option>
+          <option value="4">4 kinderen – €760/maand</option>
+          <option value="5">5 kinderen – €950/maand</option>
+        </select>
+      </div>
+      <div class="field-row">
+        <label for="numMiddelbar">Middelbar</label>
+        <select id="numMiddelbar">
+          <option value="0">0 kinderen</option>
+          <option value="1">1 kind – €250/maand</option>
+          <option value="2">2 kinderen – €500/maand</option>
+          <option value="3">3 kinderen – €750/maand</option>
+          <option value="4">4 kinderen – €1000/maand</option>
+          <option value="5">5 kinderen – €1250/maand</option>
+        </select>
+      </div>
+      <div class="field-row">
+        <label for="numMipiOilelim">Mipi Oilelim</label>
+        <select id="numMipiOilelim">
+          <option value="0">0 kinderen</option>
+          <option value="1">1 kind – €200/maand</option>
+          <option value="2">2 kinderen – €400/maand</option>
+          <option value="3">3 kinderen – €600/maand</option>
+          <option value="4">4 kinderen – €800/maand</option>
+          <option value="5">5 kinderen – €1000/maand</option>
+        </select>
+      </div>
 
       <div class="total-box" id="totalDisplay">Maandelijks totaal: €0</div>
 
@@ -181,9 +197,9 @@
   <script>
     // pricemap
     const prcKleuters = 170;
-    const prcLagereSchool = 185;
-    const prcMiddelbar = 200;
-    const prcMipiOilelim = 220;
+    const prcLagereSchool = 190;
+    const prcMiddelbar = 250;
+    const prcMipiOilelim = 200;
 
     //update total on change
     const selects = document.querySelectorAll('select');
@@ -208,7 +224,6 @@
       const payload = {
         parentName: document.getElementById('parentName').value,
         parentEmail: document.getElementById('parentEmail').value,
-        childrenNames: document.getElementById('childrenNames').value,
         numChildren: {
           kleuters: parseInt(document.getElementById('numKleuters').value),
           lagereSchool: parseInt(document.getElementById('numLagereSchool').value),
