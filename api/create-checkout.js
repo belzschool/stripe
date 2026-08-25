@@ -120,25 +120,6 @@ module.exports = async (req, res) => {
 
       if (existingCustomers.data && existingCustomers.data.length > 0) {
         customer = existingCustomers.data[0];
-
-        await stripe.customers.update(
-          customer.id,
-          {
-            name: parentName,
-            address: {
-              line1: billingStreet || undefined,
-              city: billingCity || undefined,
-              postal_code: billingPostalCode || undefined,
-              country: billingCountry,
-            },
-            metadata: {
-              parentName,
-              childrenNames,
-              invoiceName: invoiceName || parentName,
-            },
-          },
-          requestOptions
-        );
       } else {
         customer = await stripe.customers.create({
           email: parentEmail,
@@ -156,6 +137,25 @@ module.exports = async (req, res) => {
           }
         }, requestOptions);
       }
+
+      await stripe.customers.update(
+        customer.id,
+        {
+          name: parentName,
+          address: {
+            line1: billingStreet || undefined,
+            city: billingCity || undefined,
+            postal_code: billingPostalCode || undefined,
+            country: billingCountry,
+          },
+          metadata: {
+            parentName,
+            childrenNames,
+            invoiceName: invoiceName || parentName,
+          },
+        },
+        requestOptions
+      );
 
       const session = await stripe.checkout.sessions.create({
         payment_method_types: ['sepa_debit'],
