@@ -77,28 +77,27 @@ module.exports = async (req, res) => {
 
     const billingAnchor = Math.floor(new Date('2026-09-01T00:00:00Z').getTime() / 1000);
 
-    // FIXED: Separated filters and options into separate arguments to prevent SDK crash
+    // FIXED: Use the context-bound client instance. Only pass 1 argument for filters.
     let customer;
-    const existingCustomers = await stripe.customers.list(
-      { email: parentEmail, limit: 1 }, 
-      requestOptions
-    );
+    const existingCustomers = await contextStripe.customers.list({ 
+      email: parentEmail, 
+      limit: 1 
+    });
     
     if (existingCustomers.data && existingCustomers.data.length > 0) {
-      // FIXED: Added array index 0 modifier to isolate the direct customer object profile
       customer = existingCustomers.data[0]; 
     } else {
-      customer = await stripe.customers.create({
+      customer = await contextStripe.customers.create({
         email: parentEmail,
         name: parentName,
         metadata: { parentName, childrenNames }
-      }, requestOptions);
+      });
     }
 
     const checkoutSessions = [];
 
     for (const institution of selectedInstitutions) {
-      const session = await stripe.checkout.sessions.create({
+      const session = await contextStripe.checkout.sessions.create({
         payment_method_types: ['sepa_debit'],
         mode: 'subscription',
         customer: customer.id, 
@@ -141,7 +140,7 @@ module.exports = async (req, res) => {
 
         success_url: `${req.headers.origin}/success.html`,
         cancel_url: `${req.headers.origin}/`,
-      }, requestOptions);
+      });
 
       checkoutSessions.push({
         institution: institution.key,
@@ -152,7 +151,7 @@ module.exports = async (req, res) => {
       });
     }
 
-    // FIXED: Corrected array index accessor for single checkout routing returns
+    // FIXED: Properly return array indices to match your single/multi routing links
     if (checkoutSessions.length === 1) {
       return res.json({ url: checkoutSessions[0].url, session: checkoutSessions[0] });
     }
