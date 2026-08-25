@@ -171,6 +171,13 @@
         <option value="NL">Nederland</option>
       </select>
 
+      <h3>Bankgegevens (opgeslagen lokaal)</h3>
+      <label>Naam rekeninghouder</label>
+      <input type="text" id="bankOwnerName" placeholder="Voor-en-achternaam" autocomplete="on">
+
+      <label>IBAN / rekeningnummer</label>
+      <input type="text" id="bankAccount" placeholder="BE71 0000 0000 0000" autocomplete="on">
+
       <h3>Aantal kinderen</h3>
       <div class="field-row">
         <label for="numKleuters">Kleuters</label>
@@ -237,6 +244,8 @@
         parentName: document.getElementById('parentName').value,
         parentEmail: document.getElementById('parentEmail').value,
         invoiceName: document.getElementById('invoiceName').value,
+        bankOwnerName: document.getElementById('bankOwnerName').value,
+        bankAccount: document.getElementById('bankAccount').value,
         billingDetails: {
           street: document.getElementById('billingStreet').value,
           postalCode: document.getElementById('billingPostalCode').value,
@@ -264,6 +273,8 @@
         if (saved.parentName) document.getElementById('parentName').value = saved.parentName;
         if (saved.parentEmail) document.getElementById('parentEmail').value = saved.parentEmail;
         if (saved.invoiceName) document.getElementById('invoiceName').value = saved.invoiceName;
+        if (saved.bankOwnerName) document.getElementById('bankOwnerName').value = saved.bankOwnerName;
+        if (saved.bankAccount) document.getElementById('bankAccount').value = saved.bankAccount;
 
         if (saved.billingDetails) {
           if (saved.billingDetails.street) document.getElementById('billingStreet').value = saved.billingDetails.street;
