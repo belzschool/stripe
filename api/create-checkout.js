@@ -167,9 +167,6 @@ module.exports = async (req, res) => {
         },
         payment_method_collection: 'if_required',
         billing_address_collection: 'required',
-        invoice_creation: {
-          enabled: true,
-        },
         locale: 'nl',
 
         line_items: [{
