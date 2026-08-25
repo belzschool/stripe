@@ -1,9 +1,7 @@
-// 1. Initialize Stripe with your Secret Key ONLY to avoid boot-time syntax errors
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
-// FIXED: Define the context-bound client globally so it is accessible inside the request handler
 const contextStripe = stripe.withRequestOptions({
-  stripeContext: process.env.STRIPE_MAIN_PLATFORM_ACCOUNT_ID
+  stripeContext: "org_6VD7dod49CuS5NX9j1v52MS",
 });
 
 const STRIPE_ACCOUNT_BENOS_BELZ = "acct_1U3j1hV05DBqyUIY"
@@ -46,8 +44,6 @@ module.exports = async (req, res) => {
   try {
     const { parentName, parentEmail, childrenNames, numChildren = {} } = req.body;
     
-    // REMOVED: contextStripe initialization is removed from here to prevent scoping bugs
-
     const selectedInstitutions = Object.entries(INSTITUTION_CONFIG)
       .map(([key, config]) => ({
         key,
@@ -79,15 +75,14 @@ module.exports = async (req, res) => {
 
     const billingAnchor = Math.floor(new Date('2026-09-01T00:00:00Z').getTime() / 1000);
 
-    // FIXED: Use the context-bound client instance. Only pass 1 argument for filters.
     let customer;
-    const existingCustomers = await contextStripe.customers.list({ 
-      email: parentEmail, 
-      limit: 1 
+    const existingCustomers = await contextStripe.customers.list({
+      email: parentEmail,
+      limit: 1
     });
-    
+
     if (existingCustomers.data && existingCustomers.data.length > 0) {
-      customer = existingCustomers.data[0]; 
+      customer = existingCustomers.data[0];
     } else {
       customer = await contextStripe.customers.create({
         email: parentEmail,
@@ -102,7 +97,7 @@ module.exports = async (req, res) => {
       const session = await contextStripe.checkout.sessions.create({
         payment_method_types: ['sepa_debit'],
         mode: 'subscription',
-        customer: customer.id, 
+        customer: customer.id,
         billing_address_collection: 'required',
         locale: 'nl',
 
@@ -119,12 +114,15 @@ module.exports = async (req, res) => {
           quantity: 1,
         }],
 
+        payment_intent_data: {
+          transfer_data: {
+            destination: institution.accountId,
+          },
+        },
+
         subscription_data: {
           billing_cycle_anchor: billingAnchor,
           proration_behavior: 'none',
-          transfer_data: {
-            destination: institution.accountId, 
-          },
           metadata: {
             parentName,
             childrenNames,
