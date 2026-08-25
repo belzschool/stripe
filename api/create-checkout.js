@@ -29,6 +29,7 @@ const INSTITUTION_CONFIG = {
 };
 
 module.exports = async (req, res) => {
+  // Catch early non-POST requests cleanly
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -67,15 +68,13 @@ module.exports = async (req, res) => {
 
     const billingAnchor = Math.floor(new Date('2026-09-01T00:00:00Z').getTime() / 1000);
 
-    // FIXED: Safely query the existing customer profile
+    // Safely query or build unified platform customer profile
     let customer;
     const existingCustomers = await stripe.customers.list({ email: parentEmail, limit: 1 });
     
     if (existingCustomers.data.length > 0) {
-      // Grab the single customer object from the index array
       customer = existingCustomers.data[0]; 
     } else {
-      // Explicit 'else' block ensures clean variable fallbacks
       customer = await stripe.customers.create({
         email: parentEmail,
         name: parentName,
@@ -140,6 +139,7 @@ module.exports = async (req, res) => {
       });
     }
 
+    // FIXED: Properly access array item [0] to avoid runtime errors
     if (checkoutSessions.length === 1) {
       return res.json({ url: checkoutSessions[0].url, session: checkoutSessions[0] });
     }
@@ -147,7 +147,6 @@ module.exports = async (req, res) => {
     return res.json({ urls: checkoutSessions.map((item) => item.url), sessions: checkoutSessions });
 
   } catch (err) {
-    // Catch-all block guaranteed to always return clean valid JSON format back to your frontend
     console.error('Stripe handler critical error:', err.message);
     return res.status(500).json({ error: err.message });
   }
