@@ -10,19 +10,19 @@ const INSTITUTION_CONFIG = {
   lagereSchool: {
     label: 'Lagere School',
     accountId: process.env.STRIPE_ACCOUNT_BENOS_BELZ,
-    priceCents: Number(process.env.PRICE_LAGERE || 17000),
+    priceCents: Number(process.env.PRICE_LAGERE || 18500),
     destinationName: 'Benos Belz',
   },
   middelbar: {
     label: 'Middelbaar',
     accountId: process.env.STRIPE_ACCOUNT_MIDDELBAR,
-    priceCents: Number(process.env.PRICE_MIDDELBAR || 17000),
+    priceCents: Number(process.env.PRICE_MIDDELBAR || 20000),
     destinationName: 'Middelbar',
   },
   mipiOilelim: {
     label: 'Mipi Oilelim',
     accountId: process.env.STRIPE_ACCOUNT_GAN,
-    priceCents: Number(process.env.PRICE_MIPI || 17000),
+    priceCents: Number(process.env.PRICE_MIPI || 22000),
     destinationName: 'Gan',
   },
 };
@@ -52,16 +52,22 @@ module.exports = async (req, res) => {
     0
   );
 
+  const missingAccountIds = selectedInstitutions
+    .filter((institution) => !institution.accountId)
+    .map((institution) => institution.label);
+
+  if (missingAccountIds.length) {
+    return res.status(500).json({
+      error: `Stripe account missing for: ${missingAccountIds.join(', ')}`,
+    });
+  }
+
   const billingAnchor = Math.floor(new Date('2026-09-01T00:00:00Z').getTime() / 1000);
 
   try {
     const checkoutSessions = [];
 
     for (const institution of selectedInstitutions) {
-      if (!institution.accountId) {
-        return res.status(500).json({ error: `Stripe account missing for ${institution.label}` });
-      }
-
       const session = await stripe.checkout.sessions.create({
         payment_method_types: ['sepa_debit'],
         mode: 'subscription',
