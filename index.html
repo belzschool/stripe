@@ -258,6 +258,7 @@
 
   <script>
     const STORAGE_KEY = 'belz_school_checkout_form';
+    const SESSION_STORAGE_KEY = 'belz_school_checkout_form_session';
 
     const prcKleuters = 170;
     const prcLagereSchool = 190;
@@ -286,12 +287,16 @@
 
     function saveFormState() {
       const state = getFormState();
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      const serialized = JSON.stringify(state);
+      localStorage.setItem(STORAGE_KEY, serialized);
+      sessionStorage.setItem(SESSION_STORAGE_KEY, serialized);
     }
 
     function restoreFormState() {
       try {
-        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+        const savedLocal = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+        const savedSession = JSON.parse(sessionStorage.getItem(SESSION_STORAGE_KEY) || '{}');
+        const saved = Object.keys(savedSession).length ? savedSession : savedLocal;
 
         if (saved.parentName) document.getElementById('parentName').value = saved.parentName;
         if (saved.parentEmail) document.getElementById('parentEmail').value = saved.parentEmail;
@@ -345,6 +350,8 @@
         // Standard single school submission
         if (data.url) {
           sessionStorage.removeItem('stripe_checkout_queue');
+          sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(payload));
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
           window.location.href = data.url;
           return;
         }
@@ -352,6 +359,8 @@
         // Multi-school submission
         if (data.urls && data.urls.length > 0) {
           sessionStorage.setItem('stripe_checkout_queue', JSON.stringify(data.urls));
+          sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(payload));
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
           const nextQueue = [...data.urls];
           const firstUrl = nextQueue.shift();
           sessionStorage.setItem('stripe_checkout_queue', JSON.stringify(nextQueue));

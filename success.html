@@ -162,6 +162,7 @@
         loader.style.display = 'none';
         msg.textContent = 'Hartelijk dank! Alle inschrijvingen en SEPA-machtingen zijn succesvol verwerkt voor het schooljaar 2026–2027. U ontvangt spoedig een bevestigingsmail.';
         sessionStorage.removeItem('stripe_checkout_queue');
+        sessionStorage.removeItem('belz_school_checkout_form_session');
         localStorage.removeItem('belz_school_checkout_form');
       }
     });
