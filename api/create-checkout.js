@@ -38,7 +38,7 @@ module.exports = async (req, res) => {
 
   try {
     const { parentName, parentEmail, childrenNames, numChildren = {} } = req.body;
-    
+
     const selectedInstitutions = Object.entries(INSTITUTION_CONFIG)
       .map(([key, config]) => ({
         key,
@@ -47,18 +47,41 @@ module.exports = async (req, res) => {
       }))
       .filter((institution) => institution.count > 0);
 
+    const groupedByAccount = selectedInstitutions.reduce((acc, institution) => {
+      const existing = acc[institution.accountId] || {
+        accountId: institution.accountId,
+        destinationName: institution.destinationName,
+        label: institution.destinationName,
+        count: 0,
+        priceCents: 0,
+        metadata: {
+          kleuters: 0,
+          lagereSchool: 0,
+          middelbar: 0,
+          mipiOilelim: 0,
+        },
+      };
+
+      existing.count += institution.count;
+      existing.priceCents += institution.priceCents * institution.count;
+      existing.metadata[institution.key] = (existing.metadata[institution.key] || 0) + institution.count;
+      acc[institution.accountId] = existing;
+      return acc;
+    }, {});
+
+    const accountGroups = Object.values(groupedByAccount);
     const num = selectedInstitutions.reduce((total, institution) => total + institution.count, 0);
 
-    if (!num || num < 1 || num > 10 || !parentEmail || !selectedInstitutions.length) {
+    if (!num || num < 1 || num > 10 || !parentEmail || !accountGroups.length) {
       return res.status(400).json({ error: 'Ongeldige invoer' });
     }
 
-    const totalCents = selectedInstitutions.reduce(
-      (total, institution) => total + (institution.priceCents * institution.count),
+    const totalCents = accountGroups.reduce(
+      (total, institution) => total + institution.priceCents,
       0
     );
 
-    const missingAccountIds = selectedInstitutions
+    const missingAccountIds = accountGroups
       .filter((institution) => !institution.accountId)
       .map((institution) => institution.label);
 
@@ -72,8 +95,7 @@ module.exports = async (req, res) => {
     const billingAnchor = Math.floor(new Date('2026-09-01T00:00:00Z').getTime() / 1000);
     const checkoutSessions = [];
 
-    // Loop door elke geselecteerde school en maak de sessie aan binnen het juiste sub-account
-    for (const institution of selectedInstitutions) {
+    for (const institution of accountGroups) {
       const requestOptions = {
         stripeAccount: institution.accountId,
       };
@@ -108,10 +130,10 @@ module.exports = async (req, res) => {
           price_data: {
             currency: 'eur',
             product_data: {
-              name: `${institution.label} – ${institution.count} kind${institution.count > 1 ? 'eren' : ''}`,
+              name: `${institution.destinationName} – ${institution.count} kind${institution.count > 1 ? 'eren' : ''}`,
               description: `Maandelijks schoolgeld | Kinderen: ${childrenNames}`,
             },
-            unit_amount: institution.priceCents * institution.count,
+            unit_amount: institution.priceCents,
             recurring: { interval: 'month' },
           },
           quantity: 1,
@@ -123,11 +145,15 @@ module.exports = async (req, res) => {
           metadata: {
             parentName,
             childrenNames,
-            institution: institution.label,
+            institution: institution.destinationName,
             destinationName: institution.destinationName,
             accountId: institution.accountId,
             totalChildren: String(num),
             totalCents: String(totalCents),
+            kleuters: String(institution.metadata.kleuters || 0),
+            lagereSchool: String(institution.metadata.lagereSchool || 0),
+            middelbar: String(institution.metadata.middelbar || 0),
+            mipiOilelim: String(institution.metadata.mipiOilelim || 0),
           },
         },
 
@@ -136,8 +162,8 @@ module.exports = async (req, res) => {
       }, requestOptions);
 
       checkoutSessions.push({
-        institution: institution.key,
-        label: institution.label,
+        institution: institution.accountId,
+        label: institution.destinationName,
         destinationName: institution.destinationName,
         accountId: institution.accountId,
         url: session.url,
