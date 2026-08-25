@@ -114,12 +114,6 @@ module.exports = async (req, res) => {
           quantity: 1,
         }],
 
-        payment_intent_data: {
-          transfer_data: {
-            destination: institution.accountId,
-          },
-        },
-
         subscription_data: {
           billing_cycle_anchor: billingAnchor,
           proration_behavior: 'none',
