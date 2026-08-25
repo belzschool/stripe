@@ -2,24 +2,93 @@
 <html lang="nl">
 <head>
   <meta charset="UTF-8">
-  <title>Inschrijving geslaagd – Belz School</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Belz School – Status</title>
   <style>
-    body { font-family: 'Segoe UI', sans-serif; background: #f5f7fa;
-           display: flex; align-items: center; justify-content: center; min-height: 100vh; }
-    .card { background: white; border-radius: 12px; padding: 40px;
-            max-width: 440px; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
-    h1 { font-size: 26px; color: #2e7d32; margin: 20px 0 16px; }
-    p { color: #555; line-height: 1.7; font-size: 15px; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f5f7fa;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 40px;
+      max-width: 480px;
+      width: 100%;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      text-align: center;
+    }
+    .icon { font-size: 48px; margin-bottom: 16px; }
+    h1 { font-size: 22px; color: #1a1a2e; margin-bottom: 12px; }
+    p { font-size: 15px; color: #444; line-height: 1.6; margin-bottom: 24px; }
+    .loader {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #1a73e8;
+      border-radius: 50%;
+      width: 30px;
+      height: 30px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 16px auto;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
   </style>
 </head>
 <body>
   <div class="card">
-    <div style="font-size:60px">✅</div>
-    <h1>Inschrijving geslaagd!</h1>
-    <p>Hartelijk dank voor uw inschrijving bij <strong>Belz School</strong>.<br><br>
-    De eerste betaling voor <strong>september 2026</strong> wordt spoedig verwerkt.
-    Daarna wordt u automatisch op de <strong>1e van iedere maand</strong> geïncasseerd.<br><br>
-    U ontvangt een bevestigingsmail van Stripe.</p>
+    <div id="statusIcon" class="icon">⏳</div>
+    <h1 id="statusTitle">Betaling controleren...</h1>
+    <div id="loadingAnimation" class="loader"></div>
+    <p id="statusMessage">Een moment geduld alstublieft.</p>
   </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const icon = document.getElementById('statusIcon');
+      const title = document.getElementById('statusTitle');
+      const msg = document.getElementById('statusMessage');
+      const loader = document.getElementById('loadingAnimation');
+
+      // 1. Fetch remaining steps from storage
+      let queue = [];
+      try {
+        queue = JSON.parse(sessionStorage.getItem('stripe_checkout_queue')) || [];
+      } catch (e) {
+        queue = [];
+      }
+
+      // 2. Handle Multi-School Flow Redirect
+      if (queue.length > 0) {
+        icon.textContent = '✅';
+        title.textContent = 'Eerste deel voltooid!';
+        msg.textContent = 'Uw betalingsmandaat is goedgekeurd. U wordt nu binnen 3 seconden automatisch doorgestuurd naar het volgende formulier om uw resterende inschrijving af te ronden...';
+        
+        // Take next URL out of storage queue
+        const nextUrl = queue.shift();
+        sessionStorage.setItem('stripe_checkout_queue', JSON.stringify(queue));
+
+        // Route them onward after a small visual pause
+        setTimeout(() => {
+          window.location.href = nextUrl;
+        }, 3000);
+
+      // 3. Handle Full Final Success
+      } else {
+        icon.textContent = '🎉';
+        title.textContent = 'Inschrijving Succesvol!';
+        loader.style.display = 'none';
+        msg.textContent = 'Hartelijk dank! Alle inschrijvingen en SEPA-machtingen zijn succesvol verwerkt voor het schooljaar 2026–2027. U ontvangt spoedig een bevestigingsmail.';
+        sessionStorage.removeItem('stripe_checkout_queue');
+      }
+    });
+  </script>
 </body>
 </html>

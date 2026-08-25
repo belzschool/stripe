@@ -3,25 +3,25 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const INSTITUTION_CONFIG = {
   kleuters: {
     label: 'Kleuters',
-    accountId: process.env.STRIPE_ACCOUNT_BENOS_BELZ,
+    accountId: "acct_1U3j1hV05DBqyUIY",
     priceCents: Number(process.env.PRICE_KLEUTERS || 17000),
     destinationName: 'Benos Belz',
   },
   lagereSchool: {
     label: 'Lagere School',
-    accountId: process.env.STRIPE_ACCOUNT_BENOS_BELZ,
+    accountId: "acct_1U3j1hV05DBqyUIY",
     priceCents: Number(process.env.PRICE_LAGERE || 18500),
     destinationName: 'Benos Belz',
   },
   middelbar: {
     label: 'Middelbaar',
-    accountId: process.env.STRIPE_ACCOUNT_MIDDELBAR,
+    accountId: "acct_1U3jruV05FDr8CDq",
     priceCents: Number(process.env.PRICE_MIDDELBAR || 20000),
     destinationName: 'Middelbar',
   },
   mipiOilelim: {
     label: 'Mipi Oilelim',
-    accountId: process.env.STRIPE_ACCOUNT_GAN,
+    accountId: "acct_1U3jjIV05EEmruZj",
     priceCents: Number(process.env.PRICE_MIPI || 22000),
     destinationName: 'Gan',
   },
