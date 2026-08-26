@@ -76,14 +76,14 @@
       margin-top: 8px;
     }
     .quick {
-      color: #8b969a;
+      color: #015989;
       font-family: "Montserrat", sans-serif;
       font-optical-sizing: auto;
       font-weight: 800;
       font-style: normal;
     }
     .click {
-      color: #4fb061;
+      color: #992678;
       font-family: "Montserrat", sans-serif;
       font-optical-sizing: auto;
       font-weight: 400;
@@ -132,10 +132,10 @@
       const msg = document.getElementById('statusMessage');
       const loader = document.getElementById('loadingAnimation');
 
-      // 1. Fetch remaining steps from durable storage
+      // 1. Fetch remaining steps from storage
       let queue = [];
       try {
-        queue = JSON.parse(localStorage.getItem('belz_school_checkout_queue') || sessionStorage.getItem('stripe_checkout_queue') || '[]');
+        queue = JSON.parse(sessionStorage.getItem('stripe_checkout_queue')) || [];
       } catch (e) {
         queue = [];
       }
@@ -145,11 +145,12 @@
         icon.classList.add('success-check');
         title.textContent = 'Eerste deel voltooid!';
         msg.textContent = 'Uw betalingsmandaat is goedgekeurd. U wordt nu binnen 3 seconden automatisch doorgestuurd naar het volgende formulier om uw resterende inschrijving af te ronden...';
-
+        
+        // Take next URL out of storage queue
         const nextUrl = queue.shift();
-        localStorage.setItem('belz_school_checkout_queue', JSON.stringify(queue));
         sessionStorage.setItem('stripe_checkout_queue', JSON.stringify(queue));
 
+        // Route them onward after a small visual pause
         setTimeout(() => {
           window.location.href = nextUrl;
         }, 3000);
@@ -160,7 +161,6 @@
         title.textContent = 'Inschrijving Succesvol!';
         loader.style.display = 'none';
         msg.textContent = 'Hartelijk dank! Alle inschrijvingen en SEPA-machtingen zijn succesvol verwerkt voor het schooljaar 2026–2027. U ontvangt spoedig een bevestigingsmail.';
-        localStorage.removeItem('belz_school_checkout_queue');
         sessionStorage.removeItem('stripe_checkout_queue');
         sessionStorage.removeItem('belz_school_checkout_form_session');
         localStorage.removeItem('belz_school_checkout_form');
