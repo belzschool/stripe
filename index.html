@@ -325,13 +325,7 @@
       datalist.innerHTML = '';
 
       if (!results || results.length === 0) return;
-      if (results.length === 1 && results[0] === '###') {
-        const option = document.createElement('option');
-        option.value = 'Please continue typing...';
-        datalist.appendChild(option);
-        return;
-      }
-
+    
       results.forEach((item) => {
         const option = document.createElement('option');
         option.value = item.display;
@@ -348,7 +342,7 @@
       const query = input.value.trim();
 
       if (query.length < 3) {
-        renderAddressSuggestions([['###']]);
+        renderAddressSuggestions([]);
         return;
       }
 
