@@ -96,9 +96,36 @@
     }
     .address-search-wrap {
       position: relative;
+      width: 100%;
     }
     .address-search-wrap input {
+      width: 100%;
       margin-bottom: 12px;
+    }
+    #billingAddressSuggestions {
+      width: 100%;
+      max-height: 220px;
+      overflow: auto;
+      border: 1.5px solid #d4dbe2;
+      border-radius: 8px;
+      background: #fff;
+      box-shadow: 0 8px 18px rgba(1, 89, 137, 0.12);
+      padding: 4px;
+      font-size: 14px;
+      color: #1d2b36;
+    }
+    #billingAddressSuggestions option {
+      padding: 10px 12px;
+      border-radius: 6px;
+      background: #fff;
+      color: #1d2b36;
+      line-height: 1.4;
+    }
+    #billingAddressSuggestions option:hover,
+    #billingAddressSuggestions option:focus,
+    #billingAddressSuggestions option:checked {
+      background: #edf3f7;
+      color: #015989;
     }
     input {
       margin-bottom: 12px;
@@ -270,8 +297,7 @@
     const SESSION_STORAGE_KEY = 'belz_school_checkout_form_session';
     const QUEUE_STORAGE_KEY = 'belz_school_checkout_queue';
 
-    const prcKleuters = 170;
-    const ADDRESS_LOOKUP_DELAY_MS = 350;
+    const ADDRESS_LOOKUP_DELAY_MS = 250;
     let addressLookupTimer = null;
 
     function normalizeAddressSuggestion(result) {
@@ -299,6 +325,12 @@
       datalist.innerHTML = '';
 
       if (!results || results.length === 0) return;
+      if (results.length === 1 && results[0] === '###') {
+        const option = document.createElement('option');
+        option.value = 'Please continue typing...';
+        datalist.appendChild(option);
+        return;
+      }
 
       results.forEach((item) => {
         const option = document.createElement('option');
@@ -316,7 +348,7 @@
       const query = input.value.trim();
 
       if (query.length < 3) {
-        renderAddressSuggestions([]);
+        renderAddressSuggestions([['###']]);
         return;
       }
 
@@ -369,6 +401,7 @@
       document.getElementById('billingCountry').value = country;
       saveFormState();
     }
+
     const prcLagereSchool = 190;
     const prcMiddelbar = 250;
     const prcMipiOilelim = 200;
