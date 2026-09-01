@@ -94,6 +94,7 @@
     .full-width {
       width: 100%;
     }
+
     input {
       margin-bottom: 12px;
     }
@@ -145,14 +146,14 @@
       margin-top: 12px; 
     }
     .quick {
-      color: #8b969a;
+      color: #015989;
       font-family: "Montserrat", sans-serif;
       font-optical-sizing: auto;
       font-weight: 800;
       font-style: normal;
    }
    .click {
-      color: #4fb061;
+      color: #992678;
       font-family: "Montserrat", sans-serif;
       font-optical-sizing: auto;
       font-weight: 400;
@@ -259,9 +260,7 @@
   <script>
     const STORAGE_KEY = 'belz_school_checkout_form';
     const SESSION_STORAGE_KEY = 'belz_school_checkout_form_session';
-    const QUEUE_STORAGE_KEY = 'belz_school_checkout_queue';
 
-    const prcKleuters = 170;
     const prcLagereSchool = 190;
     const prcMiddelbar = 250;
     const prcMipiOilelim = 200;
@@ -297,7 +296,7 @@
       try {
         const savedLocal = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
         const savedSession = JSON.parse(sessionStorage.getItem(SESSION_STORAGE_KEY) || '{}');
-        const saved = Object.keys(savedLocal).length ? savedLocal : savedSession;
+        const saved = Object.keys(savedSession).length ? savedSession : savedLocal;
 
         if (saved.parentName) document.getElementById('parentName').value = saved.parentName;
         if (saved.parentEmail) document.getElementById('parentEmail').value = saved.parentEmail;
@@ -322,6 +321,7 @@
     }
 
     restoreFormState();
+
     document.getElementById('form').addEventListener('input', saveFormState);
     document.getElementById('form').addEventListener('change', saveFormState);
 
@@ -351,7 +351,6 @@
         // Standard single school submission
         if (data.url) {
           sessionStorage.removeItem('stripe_checkout_queue');
-          localStorage.removeItem(QUEUE_STORAGE_KEY);
           sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(payload));
           localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
           window.location.href = data.url;
@@ -360,13 +359,12 @@
 
         // Multi-school submission
         if (data.urls && data.urls.length > 0) {
-          const nextQueue = [...data.urls];
-          const firstUrl = nextQueue.shift();
-
-          localStorage.setItem(QUEUE_STORAGE_KEY, JSON.stringify(nextQueue));
-          sessionStorage.setItem('stripe_checkout_queue', JSON.stringify(nextQueue));
+          sessionStorage.setItem('stripe_checkout_queue', JSON.stringify(data.urls));
           sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(payload));
           localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+          const nextQueue = [...data.urls];
+          const firstUrl = nextQueue.shift();
+          sessionStorage.setItem('stripe_checkout_queue', JSON.stringify(nextQueue));
           window.location.href = firstUrl;
         } 
         else {
