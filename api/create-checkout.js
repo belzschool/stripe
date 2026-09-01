@@ -80,8 +80,26 @@ module.exports = async (req, res) => {
       return acc;
     }, {});
 
+    const childSubscriptions = selectedInstitutions.flatMap((institution) =>
+      Array.from({ length: institution.count }, (_, index) => ({
+        ...institution,
+        childIndex: index + 1,
+        childLabel: `${institution.label} #${index + 1}`,
+        productName: `${institution.destinationName} – ${institution.label} ${index + 1}`,
+      }))
+    );
+
+    const childSubscriptionsByAccount = childSubscriptions.reduce((acc, subscription) => {
+      if (!acc[subscription.accountId]) {
+        acc[subscription.accountId] = [];
+      }
+
+      acc[subscription.accountId].push(subscription);
+      return acc;
+    }, {});
+
     const accountGroups = Object.values(groupedByAccount);
-    const num = selectedInstitutions.reduce((total, institution) => total + institution.count, 0);
+    const num = childSubscriptions.length;
 
     if (!num || num < 1 || num > 10 || !parentEmail || !accountGroups.length) {
       return res.status(400).json({ error: 'Ongeldige invoer' });
@@ -105,6 +123,7 @@ module.exports = async (req, res) => {
     // First billing cycle:
     // - before 2026-09-01: create the regular subscription starting on 2026-09-01
     // - on/after 2026-09-01: charge the full September amount immediately and start the recurring cycle on 2026-10-01
+    // SEPA debit risk is evaluated per charge, so each child gets its own subscription/debit.
     const septemberStart = new Date('2026-09-01T00:00:00Z');
     const octoberStart = new Date('2026-10-01T00:00:00Z');
     const now = new Date();
@@ -161,9 +180,115 @@ module.exports = async (req, res) => {
         requestOptions
       );
 
-      const recurringSession = isAfterSeptemberStart
-        ? null
-        : await stripe.checkout.sessions.create({
+      const accountChildren = childSubscriptionsByAccount[institution.accountId] || [];
+
+      for (const child of accountChildren) {
+        const commonMetadata = {
+          parentName,
+          institution: institution.destinationName,
+          institutionKey: child.key,
+          childIndex: String(child.childIndex),
+          childLabel: child.productName,
+          destinationName: institution.destinationName,
+          accountId: institution.accountId,
+          totalChildren: String(num),
+          totalCents: String(totalCents),
+          billingCycleType: isAfterSeptemberStart
+            ? 'immediate-september-charge-plus-october-cycle'
+            : 'standard-september-cycle',
+          kleuters: String(institution.metadata.kleuters || 0),
+          lagereSchool: String(institution.metadata.lagereSchool || 0),
+          middelbar: String(institution.metadata.middelbar || 0),
+          mipiOilelim: String(institution.metadata.mipiOilelim || 0),
+        };
+
+        const recurringSession = isAfterSeptemberStart
+          ? null
+          : await stripe.checkout.sessions.create({
+              payment_method_types: ['sepa_debit'],
+              mode: 'subscription',
+              customer: customer.id,
+              customer_update: {
+                address: 'auto',
+                name: 'auto',
+              },
+              payment_method_collection: 'if_required',
+              billing_address_collection: 'required',
+              locale: 'nl',
+
+              line_items: [{
+                price_data: {
+                  currency: 'eur',
+                  product_data: {
+                    name: child.productName,
+                    description: `Maandelijks schoolgeld – ${child.label}`,
+                  },
+                  unit_amount: child.priceCents,
+                  recurring: { interval: 'month' },
+                },
+                quantity: 1,
+              }],
+
+              subscription_data: {
+                billing_cycle_anchor: recurringBillingAnchor,
+                proration_behavior: 'none',
+                metadata: {
+                  ...commonMetadata,
+                  firstBillingDate: '2026-09-01',
+                  recurringStartDate: '2026-09-01',
+                },
+              },
+
+              success_url: `${req.headers.origin}/success.html`,
+              cancel_url: `${req.headers.origin}/`,
+            }, requestOptions);
+
+        if (isAfterSeptemberStart) {
+          const septemberSession = await stripe.checkout.sessions.create({
+            payment_method_types: ['sepa_debit'],
+            mode: 'payment',
+            customer: customer.id,
+            customer_update: {
+              address: 'auto',
+              name: 'auto',
+            },
+            billing_address_collection: 'required',
+            locale: 'nl',
+
+            line_items: [{
+              price_data: {
+                currency: 'eur',
+                product_data: {
+                  name: `${child.productName} – September`,
+                  description: `Volledige septemberfactuur – ${child.label}`,
+                },
+                unit_amount: child.priceCents,
+              },
+              quantity: 1,
+            }],
+
+            metadata: {
+              ...commonMetadata,
+              billingMonth: '2026-09',
+              recurringStartDate: '2026-10-01',
+            },
+
+            success_url: `${req.headers.origin}/success.html`,
+            cancel_url: `${req.headers.origin}/`,
+          }, requestOptions);
+
+          checkoutSessions.push({
+            institution: institution.accountId,
+            institutionKey: child.key,
+            childIndex: child.childIndex,
+            label: `${institution.destinationName} – ${child.label} – September`,
+            destinationName: institution.destinationName,
+            accountId: institution.accountId,
+            url: septemberSession.url,
+            flow: 'immediate-september-payment',
+          });
+
+          const subscriptionSession = await stripe.checkout.sessions.create({
             payment_method_types: ['sepa_debit'],
             mode: 'subscription',
             customer: customer.id,
@@ -179,10 +304,10 @@ module.exports = async (req, res) => {
               price_data: {
                 currency: 'eur',
                 product_data: {
-                  name: `${institution.destinationName} – ${institution.count} kind${institution.count > 1 ? 'eren' : ''}`,
-                  description: `Maandelijks schoolgeld`,
+                  name: child.productName,
+                  description: `Maandelijks schoolgeld – ${child.label}`,
                 },
-                unit_amount: institution.priceCents,
+                unit_amount: child.priceCents,
                 recurring: { interval: 'month' },
               },
               quantity: 1,
@@ -192,19 +317,9 @@ module.exports = async (req, res) => {
               billing_cycle_anchor: recurringBillingAnchor,
               proration_behavior: 'none',
               metadata: {
-                parentName,
-                institution: institution.destinationName,
-                destinationName: institution.destinationName,
-                accountId: institution.accountId,
-                totalChildren: String(num),
-                totalCents: String(totalCents),
+                ...commonMetadata,
                 firstBillingDate: '2026-09-01',
-                recurringStartDate: '2026-09-01',
-                billingCycleType: 'standard-september-cycle',
-                kleuters: String(institution.metadata.kleuters || 0),
-                lagereSchool: String(institution.metadata.lagereSchool || 0),
-                middelbar: String(institution.metadata.middelbar || 0),
-                mipiOilelim: String(institution.metadata.mipiOilelim || 0),
+                recurringStartDate: '2026-10-01',
               },
             },
 
@@ -212,125 +327,28 @@ module.exports = async (req, res) => {
             cancel_url: `${req.headers.origin}/`,
           }, requestOptions);
 
-      if (isAfterSeptemberStart) {
-        const septemberSession = await stripe.checkout.sessions.create({
-          payment_method_types: ['sepa_debit'],
-          mode: 'payment',
-          customer: customer.id,
-          customer_update: {
-            address: 'auto',
-            name: 'auto',
-          },
-          billing_address_collection: 'required',
-          locale: 'nl',
-
-          line_items: [{
-            price_data: {
-              currency: 'eur',
-              product_data: {
-                name: `${institution.destinationName} – September ${institution.count} kind${institution.count > 1 ? 'eren' : ''}`,
-                description: `Volledige septemberfactuur`,
-              },
-              unit_amount: institution.priceCents,
-            },
-            quantity: 1,
-          }],
-
-          metadata: {
-            parentName,
-            institution: institution.destinationName,
+          checkoutSessions.push({
+            institution: institution.accountId,
+            institutionKey: child.key,
+            childIndex: child.childIndex,
+            label: `${institution.destinationName} – ${child.label} – Vanaf oktober`,
             destinationName: institution.destinationName,
             accountId: institution.accountId,
-            totalChildren: String(num),
-            totalCents: String(totalCents),
-            billingMonth: '2026-09',
-            recurringStartDate: '2026-10-01',
-            billingCycleType: 'immediate-september-charge-plus-october-cycle',
-            kleuters: String(institution.metadata.kleuters || 0),
-            lagereSchool: String(institution.metadata.lagereSchool || 0),
-            middelbar: String(institution.metadata.middelbar || 0),
-            mipiOilelim: String(institution.metadata.mipiOilelim || 0),
-          },
-
-          success_url: `${req.headers.origin}/success.html`,
-          cancel_url: `${req.headers.origin}/`,
-        }, requestOptions);
-
-        checkoutSessions.push({
-          institution: institution.accountId,
-          label: `${institution.destinationName} – September`,
-          destinationName: institution.destinationName,
-          accountId: institution.accountId,
-          url: septemberSession.url,
-          flow: 'immediate-september-payment',
-        });
-
-        const subscriptionSession = await stripe.checkout.sessions.create({
-          payment_method_types: ['sepa_debit'],
-          mode: 'subscription',
-          customer: customer.id,
-          customer_update: {
-            address: 'auto',
-            name: 'auto',
-          },
-          payment_method_collection: 'if_required',
-          billing_address_collection: 'required',
-          locale: 'nl',
-
-          line_items: [{
-            price_data: {
-              currency: 'eur',
-              product_data: {
-                name: `${institution.destinationName} – ${institution.count} kind${institution.count > 1 ? 'eren' : ''}`,
-                description: `Maandelijks schoolgeld`,
-              },
-              unit_amount: institution.priceCents,
-              recurring: { interval: 'month' },
-            },
-            quantity: 1,
-          }],
-
-          subscription_data: {
-            billing_cycle_anchor: recurringBillingAnchor,
-            proration_behavior: 'none',
-            metadata: {
-              parentName,
-              institution: institution.destinationName,
-              destinationName: institution.destinationName,
-              accountId: institution.accountId,
-              totalChildren: String(num),
-              totalCents: String(totalCents),
-              firstBillingDate: '2026-09-01',
-              recurringStartDate: '2026-10-01',
-              billingCycleType: 'immediate-september-charge-plus-october-cycle',
-              kleuters: String(institution.metadata.kleuters || 0),
-              lagereSchool: String(institution.metadata.lagereSchool || 0),
-              middelbar: String(institution.metadata.middelbar || 0),
-              mipiOilelim: String(institution.metadata.mipiOilelim || 0),
-            },
-          },
-
-          success_url: `${req.headers.origin}/success.html`,
-          cancel_url: `${req.headers.origin}/`,
-        }, requestOptions);
-
-        checkoutSessions.push({
-          institution: institution.accountId,
-          label: `${institution.destinationName} – Vanaf oktober`,
-          destinationName: institution.destinationName,
-          accountId: institution.accountId,
-          url: subscriptionSession.url,
-          flow: 'recurring-october-subscription',
-        });
-      } else if (recurringSession) {
-        checkoutSessions.push({
-          institution: institution.accountId,
-          label: institution.destinationName,
-          destinationName: institution.destinationName,
-          accountId: institution.accountId,
-          url: recurringSession.url,
-          flow: 'standard-september-subscription',
-        });
+            url: subscriptionSession.url,
+            flow: 'recurring-october-subscription',
+          });
+        } else if (recurringSession) {
+          checkoutSessions.push({
+            institution: institution.accountId,
+            institutionKey: child.key,
+            childIndex: child.childIndex,
+            label: `${institution.destinationName} – ${child.label}`,
+            destinationName: institution.destinationName,
+            accountId: institution.accountId,
+            url: recurringSession.url,
+            flow: 'standard-september-subscription',
+          });
+        }
       }
     }
 
