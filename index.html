@@ -319,6 +319,19 @@
 
     document.getElementById('form').addEventListener('submit', async (e) => {
       e.preventDefault();
+      
+      // Validate that at least one child is selected
+      const kleuters = parseInt(document.getElementById('numKleuters').value, 10) || 0;
+      const lagereSchool = parseInt(document.getElementById('numLagereSchool').value, 10) || 0;
+      const middelbar = parseInt(document.getElementById('numMiddelbar').value, 10) || 0;
+      const mipiOilelim = parseInt(document.getElementById('numMipiOilelim').value, 10) || 0;
+      const totalChildren = kleuters + lagereSchool + middelbar + mipiOilelim;
+      
+      if (totalChildren === 0) {
+        alert('Selecteer alstublieft minimaal 1 kind');
+        return;
+      }
+      
       saveFormState();
 
       const btn = document.getElementById('btn');

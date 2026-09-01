@@ -40,7 +40,6 @@ module.exports = async (req, res) => {
     const {
       parentName,
       parentEmail,
-      childrenNames,
       invoiceName,
       billingDetails = {},
       numChildren = {},
@@ -139,7 +138,6 @@ module.exports = async (req, res) => {
           },
           metadata: {
             parentName,
-            childrenNames,
             invoiceName: invoiceName || parentName,
           }
         }, requestOptions);
@@ -157,7 +155,6 @@ module.exports = async (req, res) => {
           },
           metadata: {
             parentName,
-            childrenNames,
             invoiceName: invoiceName || parentName,
           },
         },
@@ -183,7 +180,7 @@ module.exports = async (req, res) => {
                 currency: 'eur',
                 product_data: {
                   name: `${institution.destinationName} – ${institution.count} kind${institution.count > 1 ? 'eren' : ''}`,
-                  description: `Maandelijks schoolgeld | Kinderen: ${childrenNames}`,
+                  description: `Maandelijks schoolgeld`,
                 },
                 unit_amount: institution.priceCents,
                 recurring: { interval: 'month' },
@@ -196,7 +193,6 @@ module.exports = async (req, res) => {
               proration_behavior: 'none',
               metadata: {
                 parentName,
-                childrenNames,
                 institution: institution.destinationName,
                 destinationName: institution.destinationName,
                 accountId: institution.accountId,
@@ -233,7 +229,7 @@ module.exports = async (req, res) => {
               currency: 'eur',
               product_data: {
                 name: `${institution.destinationName} – September ${institution.count} kind${institution.count > 1 ? 'eren' : ''}`,
-                description: `Volledige septemberfactuur | Kinderen: ${childrenNames}`,
+                description: `Volledige septemberfactuur`,
               },
               unit_amount: institution.priceCents,
             },
@@ -242,7 +238,6 @@ module.exports = async (req, res) => {
 
           metadata: {
             parentName,
-            childrenNames,
             institution: institution.destinationName,
             destinationName: institution.destinationName,
             accountId: institution.accountId,
@@ -287,7 +282,7 @@ module.exports = async (req, res) => {
               currency: 'eur',
               product_data: {
                 name: `${institution.destinationName} – ${institution.count} kind${institution.count > 1 ? 'eren' : ''}`,
-                description: `Maandelijks schoolgeld vanaf oktober | Kinderen: ${childrenNames}`,
+                description: `Maandelijks schoolgeld`,
               },
               unit_amount: institution.priceCents,
               recurring: { interval: 'month' },
@@ -300,7 +295,6 @@ module.exports = async (req, res) => {
             proration_behavior: 'none',
             metadata: {
               parentName,
-              childrenNames,
               institution: institution.destinationName,
               destinationName: institution.destinationName,
               accountId: institution.accountId,
