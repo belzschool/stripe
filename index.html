@@ -94,7 +94,43 @@
     .full-width {
       width: 100%;
     }
+<<<<<<< HEAD
 
+=======
+    .address-search-wrap {
+      position: relative;
+      width: 100%;
+    }
+    .address-search-wrap input {
+      width: 100%;
+      margin-bottom: 12px;
+    }
+    #billingAddressSuggestions {
+      width: 100%;
+      max-height: 220px;
+      overflow: auto;
+      border: 1.5px solid #d4dbe2;
+      border-radius: 8px;
+      background: #fff;
+      box-shadow: 0 8px 18px rgba(1, 89, 137, 0.12);
+      padding: 4px;
+      font-size: 14px;
+      color: #1d2b36;
+    }
+    #billingAddressSuggestions option {
+      padding: 10px 12px;
+      border-radius: 6px;
+      background: #fff;
+      color: #1d2b36;
+      line-height: 1.4;
+    }
+    #billingAddressSuggestions option:hover,
+    #billingAddressSuggestions option:focus,
+    #billingAddressSuggestions option:checked {
+      background: #edf3f7;
+      color: #015989;
+    }
+>>>>>>> 986324e0ccced657fe6aa9ac44bc1ff70d296d5e
     input {
       margin-bottom: 12px;
     }
@@ -183,7 +219,10 @@
       <input type="text" id="invoiceName" placeholder="Naam op factuur" required>
 
       <label>Adres</label>
-      <input type="text" id="billingStreet" placeholder="Straat + huisnummer" required>
+      <div class="address-search-wrap">
+        <input type="text" id="billingStreet" list="billingAddressSuggestions" placeholder="Straat + huisnummer" autocomplete="off" required>
+        <datalist id="billingAddressSuggestions"></datalist>
+      </div>
 
       <div class="two-col">
         <div>
@@ -261,6 +300,108 @@
     const STORAGE_KEY = 'belz_school_checkout_form';
     const SESSION_STORAGE_KEY = 'belz_school_checkout_form_session';
 
+<<<<<<< HEAD
+=======
+    const ADDRESS_LOOKUP_DELAY_MS = 250;
+    let addressLookupTimer = null;
+
+    function normalizeAddressSuggestion(result) {
+      if (!result || !result.address) return null;
+
+      const address = result.address;
+      const street = [address.road, address.house_number].filter(Boolean).join(' ');
+      const city = address.city || address.town || address.village || address.municipality || '';
+      const postalCode = address.postcode || '';
+      const countryCode = (address.country_code || 'BE').toUpperCase();
+
+      if (!street || !city) return null;
+
+      return {
+        street,
+        postalCode,
+        city,
+        countryCode,
+        display: `${street}, ${postalCode ? postalCode + ' ' : ''}${city}`.trim(),
+      };
+    }
+
+    function renderAddressSuggestions(results) {
+      const datalist = document.getElementById('billingAddressSuggestions');
+      datalist.innerHTML = '';
+
+      if (!results || results.length === 0) return;
+    
+      results.forEach((item) => {
+        const option = document.createElement('option');
+        option.value = item.display;
+        option.dataset.street = item.street;
+        option.dataset.postalCode = item.postalCode;
+        option.dataset.city = item.city;
+        option.dataset.country = item.countryCode;
+        datalist.appendChild(option);
+      });
+    }
+
+    async function lookupAddressSuggestions() {
+      const input = document.getElementById('billingStreet');
+      const query = input.value.trim();
+
+      if (query.length < 3) {
+        renderAddressSuggestions([]);
+        return;
+      }
+
+      try {
+        const url = new URL('https://nominatim.openstreetmap.org/search');
+        url.searchParams.set('q', `${query} Belgium`);
+        url.searchParams.set('format', 'jsonv2');
+        url.searchParams.set('limit', '5');
+        url.searchParams.set('addressdetails', '1');
+        url.searchParams.set('countrycodes', 'be');
+
+        const response = await fetch(url.toString(), {
+          headers: {
+            'Accept-Language': 'nl',
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error('Address lookup failed');
+        }
+
+        const results = await response.json();
+        const normalized = results
+          .map(normalizeAddressSuggestion)
+          .filter(Boolean)
+          .slice(0, 5);
+
+        renderAddressSuggestions(normalized);
+      } catch (err) {
+        console.warn('Address lookup failed:', err);
+        renderAddressSuggestions([]);
+      }
+    }
+
+    function applySelectedAddressSuggestion() {
+      const input = document.getElementById('billingStreet');
+      const datalist = document.getElementById('billingAddressSuggestions');
+      const selectedOption = Array.from(datalist.options).find((option) => option.value === input.value);
+
+      if (!selectedOption) return;
+
+      const street = selectedOption.dataset.street || input.value;
+      const postalCode = selectedOption.dataset.postalCode || '';
+      const city = selectedOption.dataset.city || '';
+      const country = selectedOption.dataset.country || document.getElementById('billingCountry').value;
+
+      input.value = street;
+      document.getElementById('billingPostalCode').value = postalCode;
+      document.getElementById('billingCity').value = city;
+      document.getElementById('billingCountry').value = country;
+      saveFormState();
+    }
+
+>>>>>>> 986324e0ccced657fe6aa9ac44bc1ff70d296d5e
     const prcLagereSchool = 190;
     const prcMiddelbar = 250;
     const prcMipiOilelim = 200;
@@ -322,6 +463,19 @@
 
     restoreFormState();
 
+<<<<<<< HEAD
+=======
+    const billingStreetInput = document.getElementById('billingStreet');
+    billingStreetInput.addEventListener('input', () => {
+      if (addressLookupTimer) clearTimeout(addressLookupTimer);
+      addressLookupTimer = setTimeout(() => {
+        lookupAddressSuggestions();
+      }, ADDRESS_LOOKUP_DELAY_MS);
+      saveFormState();
+    });
+    billingStreetInput.addEventListener('change', applySelectedAddressSuggestion);
+
+>>>>>>> 986324e0ccced657fe6aa9ac44bc1ff70d296d5e
     document.getElementById('form').addEventListener('input', saveFormState);
     document.getElementById('form').addEventListener('change', saveFormState);
 

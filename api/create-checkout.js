@@ -225,7 +225,6 @@ module.exports = async (req, res) => {
             address: 'auto',
             name: 'auto',
           },
-          payment_method_collection: 'if_required',
           billing_address_collection: 'required',
           locale: 'nl',
 
