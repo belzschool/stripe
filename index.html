@@ -356,6 +356,8 @@
         // Standard single school submission
         if (data.url) {
           sessionStorage.removeItem('stripe_checkout_queue');
+          sessionStorage.setItem('stripe_customer_id', data.customerId || '');
+          sessionStorage.setItem('stripe_customer_email', payload.parentEmail || '');
           sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(payload));
           localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
           window.location.href = data.url;
@@ -363,14 +365,17 @@
         }
 
         // Multi-school submission
-        if (data.urls && data.urls.length > 0) {
-          sessionStorage.setItem('stripe_checkout_queue', JSON.stringify(data.urls));
+        if ((data.urls && data.urls.length > 0) || (data.sessions && data.sessions.length > 0)) {
+          const queueItems = data.sessions && data.sessions.length > 0 ? data.sessions : data.urls.map((url) => ({ url }));
+          sessionStorage.setItem('stripe_checkout_queue', JSON.stringify(queueItems));
+          sessionStorage.setItem('stripe_customer_id', data.customerId || (queueItems[0] && queueItems[0].customerId) || '');
+          sessionStorage.setItem('stripe_customer_email', payload.parentEmail || '');
           sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(payload));
           localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-          const nextQueue = [...data.urls];
-          const firstUrl = nextQueue.shift();
+          const nextQueue = [...queueItems];
+          const firstItem = nextQueue.shift();
           sessionStorage.setItem('stripe_checkout_queue', JSON.stringify(nextQueue));
-          window.location.href = firstUrl;
+          window.location.href = firstItem.url;
         } 
         else {
           throw new Error('Geen geldige sessie-URL ontvangen');

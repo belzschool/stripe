@@ -135,9 +135,19 @@
       // 1. Fetch remaining steps from storage
       let queue = [];
       try {
-        queue = JSON.parse(sessionStorage.getItem('stripe_checkout_queue')) || [];
+        const rawQueue = JSON.parse(sessionStorage.getItem('stripe_checkout_queue')) || [];
+        queue = Array.isArray(rawQueue)
+          ? rawQueue.map((item) => typeof item === 'string' ? { url: item } : item)
+          : [];
       } catch (e) {
         queue = [];
+      }
+
+      const savedCustomerId = sessionStorage.getItem('stripe_customer_id');
+      const savedCustomerEmail = sessionStorage.getItem('stripe_customer_email');
+      if (savedCustomerId || savedCustomerEmail) {
+        sessionStorage.setItem('stripe_customer_id', savedCustomerId || '');
+        sessionStorage.setItem('stripe_customer_email', savedCustomerEmail || '');
       }
 
       // 2. Handle Multi-School Flow Redirect
@@ -147,12 +157,12 @@
         msg.textContent = 'Uw betalingsmandaat is goedgekeurd. U wordt nu binnen 3 seconden automatisch doorgestuurd naar het volgende formulier om uw resterende inschrijving af te ronden...';
         
         // Take next URL out of storage queue
-        const nextUrl = queue.shift();
+        const nextItem = queue.shift();
         sessionStorage.setItem('stripe_checkout_queue', JSON.stringify(queue));
 
         // Route them onward after a small visual pause
         setTimeout(() => {
-          window.location.href = nextUrl;
+          window.location.href = nextItem.url;
         }, 3000);
 
       // 3. Handle Full Final Success

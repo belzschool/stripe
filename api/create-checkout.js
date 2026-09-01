@@ -284,6 +284,8 @@ module.exports = async (req, res) => {
             label: `${institution.destinationName} – ${child.label} – September`,
             destinationName: institution.destinationName,
             accountId: institution.accountId,
+            customerId: customer.id,
+            customerEmail: customer.email,
             url: septemberSession.url,
             flow: 'immediate-september-payment',
           });
@@ -334,6 +336,8 @@ module.exports = async (req, res) => {
             label: `${institution.destinationName} – ${child.label} – Vanaf oktober`,
             destinationName: institution.destinationName,
             accountId: institution.accountId,
+            customerId: customer.id,
+            customerEmail: customer.email,
             url: subscriptionSession.url,
             flow: 'recurring-october-subscription',
           });
@@ -345,6 +349,8 @@ module.exports = async (req, res) => {
             label: `${institution.destinationName} – ${child.label}`,
             destinationName: institution.destinationName,
             accountId: institution.accountId,
+            customerId: customer.id,
+            customerEmail: customer.email,
             url: recurringSession.url,
             flow: 'standard-september-subscription',
           });
@@ -353,11 +359,23 @@ module.exports = async (req, res) => {
     }
 
     // Geef de link(s) netjes terug aan de frontend queue
+    const firstCustomerId = checkoutSessions[0]?.customerId || null;
+
     if (checkoutSessions.length === 1) {
-      return res.json({ url: checkoutSessions[0].url, session: checkoutSessions[0] });
+      return res.json({
+        url: checkoutSessions[0].url,
+        session: checkoutSessions[0],
+        customerId: firstCustomerId,
+        customerEmail: parentEmail,
+      });
     }
 
-    return res.json({ urls: checkoutSessions.map((item) => item.url), sessions: checkoutSessions });
+    return res.json({
+      urls: checkoutSessions.map((item) => item.url),
+      sessions: checkoutSessions,
+      customerId: firstCustomerId,
+      customerEmail: parentEmail,
+    });
 
   } catch (err) {
     console.error('Stripe handler critical error:', err.message);
