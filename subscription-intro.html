@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>השלב הבא – חיוב קבוע</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Segoe UI", sans-serif;
+      background: #ebeef2;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 24px;
+      max-width: 480px;
+      width: 100%;
+      box-shadow: 0 8px 24px rgba(1, 89, 137, 0.12);
+      text-align: center;
+    }
+    img { display: block; width: 100%; margin: 0 auto 24px; }
+    h1 { color: #015989; font-size: 24px; margin-bottom: 24px; }
+    p { color: #333; font-size: 17px; line-height: 1.8; margin-bottom: 14px; }
+    strong { color: #992678; }
+    button {
+      width: 100%;
+      margin-top: 20px;
+      padding: 12px 14px;
+      border: 0;
+      border-radius: 8px;
+      background: #015989;
+      color: #fff;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button:hover { background: #992678; }
+    .note { color: #777; font-size: 13px; margin-top: 14px; }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <img src="./img/header.png" alt="Belz School Logo">
+    <h1>השלב הבא:</h1>
+    <p>חתימת חיוב קבוע מאוקטובר ואילך.</p>
+    <p><strong>תידרשו למלאות פרטי הבנק (IBAN) עבור כל תלמיד/ה בנפרד.</strong></p>
+    <button id="continueButton" type="button">המשך</button>
+    <p class="note">המעבר לשלב הבא יתבצע באופן אוטומטי.</p>
+  </main>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      let queue = [];
+      try {
+        queue = JSON.parse(sessionStorage.getItem('stripe_checkout_queue') || '[]');
+      } catch (error) {
+        queue = [];
+      }
+
+      const firstItem = Array.isArray(queue) ? queue.shift() : null;
+      if (firstItem && firstItem.url) {
+        sessionStorage.setItem('stripe_checkout_queue', JSON.stringify(queue));
+        const continueToSubscription = () => { window.location.href = firstItem.url; };
+        document.getElementById('continueButton').addEventListener('click', continueToSubscription);
+        setTimeout(continueToSubscription, 2500);
+      } else {
+        document.getElementById('continueButton').textContent = 'חזרה לטופס';
+        document.getElementById('continueButton').addEventListener('click', () => {
+          window.location.href = '/';
+        });
+      }
+    });
+  </script>
+</body>
+</html>

@@ -131,6 +131,7 @@
       const title = document.getElementById('statusTitle');
       const msg = document.getElementById('statusMessage');
       const loader = document.getElementById('loadingAnimation');
+      const stage = new URLSearchParams(window.location.search).get('stage');
 
       // 1. Fetch remaining steps from storage
       let queue = [];
@@ -151,6 +152,11 @@
       }
 
       // 2. Handle Multi-School Flow Redirect
+      if (stage === 'immediate' && queue.length > 0 && queue[0].flow === 'recurring-october-subscription') {
+        window.location.href = 'subscription-intro.html';
+        return;
+      }
+
       if (queue.length > 0) {
         icon.classList.add('success-check');
         title.textContent = 'Eerste deel voltooid!';

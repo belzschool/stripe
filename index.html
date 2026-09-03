@@ -360,7 +360,9 @@
           sessionStorage.setItem('stripe_customer_email', payload.parentEmail || '');
           sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(payload));
           localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-          window.location.href = data.url;
+          const singleSession = data.session || { url: data.url };
+          sessionStorage.setItem('stripe_checkout_queue', JSON.stringify([singleSession]));
+          window.location.href = 'payment-intro.html';
           return;
         }
 
@@ -372,10 +374,8 @@
           sessionStorage.setItem('stripe_customer_email', payload.parentEmail || '');
           sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(payload));
           localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-          const nextQueue = [...queueItems];
-          const firstItem = nextQueue.shift();
-          sessionStorage.setItem('stripe_checkout_queue', JSON.stringify(nextQueue));
-          window.location.href = firstItem.url;
+          sessionStorage.setItem('stripe_checkout_queue', JSON.stringify(queueItems));
+          window.location.href = 'payment-intro.html';
         } 
         else {
           throw new Error('Geen geldige sessie-URL ontvangen');

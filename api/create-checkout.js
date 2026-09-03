@@ -327,7 +327,7 @@ module.exports = async (req, res) => {
               },
             },
 
-            success_url: `${req.headers.origin}/success.html`,
+            success_url: `${req.headers.origin}/success.html?stage=immediate`,
             cancel_url: `${req.headers.origin}/`,
           }, requestOptions);
 
