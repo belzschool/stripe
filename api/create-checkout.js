@@ -123,7 +123,7 @@ module.exports = async (req, res) => {
     // First billing cycle:
     // - before 2026-09-01: create the regular subscription starting on 2026-09-01
     // - on/after 2026-09-01: charge the full September amount immediately and start the recurring cycle on 2026-10-01
-    // SEPA debit risk is evaluated per charge, so each child gets its own subscription/debit.
+    // Each child gets a separate immediate payment and recurring subscription.
     const septemberStart = new Date('2026-09-01T00:00:00Z');
     const octoberStart = new Date('2026-10-01T00:00:00Z');
     const now = new Date();
@@ -131,6 +131,8 @@ module.exports = async (req, res) => {
     const recurringAnchorDate = isAfterSeptemberStart ? octoberStart : septemberStart;
     const recurringBillingAnchor = Math.floor(recurringAnchorDate.getTime() / 1000);
     const checkoutSessions = [];
+    const immediateSessions = [];
+    const subscriptionSessions = [];
 
     for (const institution of accountGroups) {
       const requestOptions = {
@@ -212,7 +214,7 @@ module.exports = async (req, res) => {
                 address: 'auto',
                 name: 'auto',
               },
-              payment_method_collection: 'if_required',
+              payment_method_collection: 'always',
               billing_address_collection: 'required',
               locale: 'nl',
 
@@ -245,7 +247,7 @@ module.exports = async (req, res) => {
 
         if (isAfterSeptemberStart) {
           const septemberSession = await stripe.checkout.sessions.create({
-            payment_method_types: ['sepa_debit'],
+            payment_method_types: ['card', 'bancontact'],
             mode: 'payment',
             customer: customer.id,
             customer_update: {
@@ -277,7 +279,7 @@ module.exports = async (req, res) => {
             cancel_url: `${req.headers.origin}/`,
           }, requestOptions);
 
-          checkoutSessions.push({
+          immediateSessions.push({
             institution: institution.accountId,
             institutionKey: child.key,
             childIndex: child.childIndex,
@@ -298,7 +300,7 @@ module.exports = async (req, res) => {
               address: 'auto',
               name: 'auto',
             },
-            payment_method_collection: 'if_required',
+            payment_method_collection: 'always',
             billing_address_collection: 'required',
             locale: 'nl',
 
@@ -329,7 +331,7 @@ module.exports = async (req, res) => {
             cancel_url: `${req.headers.origin}/`,
           }, requestOptions);
 
-          checkoutSessions.push({
+          subscriptionSessions.push({
             institution: institution.accountId,
             institutionKey: child.key,
             childIndex: child.childIndex,
@@ -342,7 +344,7 @@ module.exports = async (req, res) => {
             flow: 'recurring-october-subscription',
           });
         } else if (recurringSession) {
-          checkoutSessions.push({
+          subscriptionSessions.push({
             institution: institution.accountId,
             institutionKey: child.key,
             childIndex: child.childIndex,
@@ -357,6 +359,8 @@ module.exports = async (req, res) => {
         }
       }
     }
+
+    checkoutSessions.push(...immediateSessions, ...subscriptionSessions);
 
     // Geef de link(s) netjes terug aan de frontend queue
     const firstCustomerId = checkoutSessions[0]?.customerId || null;
