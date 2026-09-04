@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="icon" type="image/png" href="/img/favicon.png">
+	<title>Belz School – Inschrijving</title>
+	<style>
+		* { box-sizing: border-box; margin: 0; padding: 0; }
+		body { font-family: 'Segoe UI', sans-serif; background: #ebeef2; display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
+		.card { background: white; border-radius: 12px; padding: 24px 24px 18px; max-width: 480px; width: 100%; box-shadow: 0 8px 24px rgba(1, 89, 137, 0.12); }
+		img.header, img.footer { display: block; width: 100%; max-width: 480px; margin: 0 auto; }
+		img.header { margin-bottom: 8px; }
+		img.footer { margin-top: 20px; }
+		h3 { font-size: 17px; color: #1a1a2e; margin-top: 8px; margin-bottom: 10px; }
+		.subtitle { color: #666; font-size: 14px; margin-bottom: 16px; text-align: center; }
+		.info-box { background: #edf3f7; border-radius: 8px; padding: 12px 14px; margin-bottom: 18px; font-size: 13px; color: #1d2b36; line-height: 1.5; }
+		label { display: block; font-size: 13px; font-weight: 600; color: #333; margin-bottom: 5px; }
+		.field-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+		.field-row label { flex: 0 0 145px; margin-bottom: 0; }
+		input, select { width: 100%; padding: 10px 12px; border: 1.5px solid #d4dbe2; border-radius: 8px; font-size: 14px; outline: none; background: #f9fafb; }
+		input { margin-bottom: 12px; }
+		.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+		input:focus, select:focus { border-color: #992678; box-shadow: 0 0 0 3px rgba(153, 38, 120, 0.12); }
+		button { width: 100%; padding: 12px 14px; background: #015989; color: white; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 12px; }
+		button:hover { background: #992678; }
+		button:disabled { background: #aaa; cursor: not-allowed; }
+		.footer-note, .copyright { text-align: center; }
+		.footer-note { font-size: 12px; color: #888; margin-top: 16px; }
+		.copyright { font-size: 15px; color: #aaa; margin-top: 12px; }
+		.quick { color: #015989; font-weight: 800; }
+		.click { color: #992678; }
+	</style>
+</head>
+<body>
+	<div class="card">
+		<img src="./img/header.png" alt="Belz School Logo" class="header">
+		<p class="subtitle">Inschrijving schooljaar 2026–2027</p>
+		<div class="info-box">De betaling en SEPA-machtiging worden veilig verwerkt via Stripe.</div>
+		<form id="form">
+			<h3>Ouder informatie</h3>
+			<label for="parentName">Naam ouder</label>
+			<input type="text" id="parentName" placeholder="Voor-en-Achternaam" required>
+			<label for="parentEmail">E-mailadres</label>
+			<input type="email" id="parentEmail" placeholder="voorbeeld@email.com" required>
+			<h3>Factuurgegevens</h3>
+			<label for="invoiceName">Factuurnaam</label>
+			<input type="text" id="invoiceName" placeholder="Naam op factuur" required>
+			<label for="billingStreet">Adres</label>
+			<input type="text" id="billingStreet" placeholder="Straat + huisnummer" required>
+			<div class="two-col">
+				<div><label for="billingPostalCode">Postcode</label><input type="text" id="billingPostalCode" placeholder="1234" required></div>
+				<div><label for="billingCity">Plaats</label><input type="text" id="billingCity" placeholder="Gemeente" required></div>
+			</div>
+			<label for="billingCountry">Land</label>
+			<select id="billingCountry" required><option value="BE">België</option><option value="NL">Nederland</option></select>
+			<h3>Aantal kinderen</h3>
+			<div class="field-row"><label for="numKleuters">Kleuters</label><select id="numKleuters"><option value="0">0 kinderen</option><option value="1">1 kind – €170/maand</option><option value="2">2 kinderen – €340/maand</option><option value="3">3 kinderen – €510/maand</option><option value="4">4 kinderen – €680/maand</option><option value="5">5 kinderen – €850/maand</option></select></div>
+			<div class="field-row"><label for="numLagereSchool">Lagere School</label><select id="numLagereSchool"><option value="0">0 kinderen</option><option value="1">1 kind – €190/maand</option><option value="2">2 kinderen – €380/maand</option><option value="3">3 kinderen – €570/maand</option><option value="4">4 kinderen – €760/maand</option><option value="5">5 kinderen – €950/maand</option></select></div>
+			<div class="field-row"><label for="numMiddelbar">Middelbaar</label><select id="numMiddelbar"><option value="0">0 kinderen</option><option value="1">1 kind – €250/maand</option><option value="2">2 kinderen – €500/maand</option><option value="3">3 kinderen – €750/maand</option><option value="4">4 kinderen – €1000/maand</option><option value="5">5 kinderen – €1250/maand</option></select></div>
+			<div class="field-row"><label for="numMipiOilelim">Mipi Oilelim</label><select id="numMipiOilelim"><option value="0">0 kinderen</option><option value="1">1 kind – €200/maand</option><option value="2">2 kinderen – €400/maand</option><option value="3">3 kinderen – €600/maand</option><option value="4">4 kinderen – €800/maand</option><option value="5">5 kinderen – €1000/maand</option></select></div>
+			<button type="submit" id="btn">Doorgaan naar betaling →</button>
+		</form>
+		<img src="./img/footer.png" alt="Belz School Footer" class="footer">
+		<p class="footer-note">🔒 Beveiligde betaling via Stripe</p>
+		<p class="copyright"><strong>&copy;</strong> <span class="quick">Quick</span><span class="click">Click</span> 2026</p>
+	</div>
+	<script>
+		const getValue = (id) => document.getElementById(id).value;
+		const getPayload = () => ({
+			parentName: getValue('parentName'),
+			parentEmail: getValue('parentEmail'),
+			invoiceName: getValue('invoiceName'),
+			billingDetails: { street: getValue('billingStreet'), postalCode: getValue('billingPostalCode'), city: getValue('billingCity'), country: getValue('billingCountry') },
+			numChildren: { kleuters: Number(getValue('numKleuters')), lagereSchool: Number(getValue('numLagereSchool')), middelbar: Number(getValue('numMiddelbar')), mipiOilelim: Number(getValue('numMipiOilelim')) },
+		});
+
+		document.getElementById('form').addEventListener('submit', async (event) => {
+			event.preventDefault();
+			const button = document.getElementById('btn');
+			const payload = getPayload();
+			if (Object.values(payload.numChildren).reduce((total, count) => total + count, 0) < 1) {
+				alert('Selecteer alstublieft minimaal 1 kind');
+				return;
+			}
+			button.disabled = true;
+			button.textContent = 'Verwerken...';
+			try {
+				const response = await fetch('/api/create-checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+				const data = await response.json();
+				if (!response.ok || data.error) throw new Error(data.error || 'Er is een fout opgetreden');
+				const sessions = data.sessions || (data.session ? [data.session] : [{ url: data.url }]);
+				sessionStorage.setItem('stripe_checkout_queue', JSON.stringify(sessions));
+				sessionStorage.setItem('stripe_customer_id', data.customerId || '');
+				sessionStorage.setItem('stripe_customer_email', payload.parentEmail);
+				window.location.href = 'payment-intro.html';
+			} catch (error) {
+				alert(`Er is een fout opgetreden: ${error.message}`);
+				button.disabled = false;
+				button.textContent = 'Doorgaan naar betaling →';
+			}
+		});
+	</script>
+</body>
+</html>
