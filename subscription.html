@@ -72,6 +72,7 @@
 	<script>
 		const getValue = (id) => document.getElementById(id).value;
 		const getPayload = () => ({
+			checkoutMode: 'subscription-only',
 			parentName: getValue('parentName'),
 			parentEmail: getValue('parentEmail'),
 			invoiceName: getValue('invoiceName'),
@@ -97,7 +98,7 @@
 				sessionStorage.setItem('stripe_checkout_queue', JSON.stringify(sessions));
 				sessionStorage.setItem('stripe_customer_id', data.customerId || '');
 				sessionStorage.setItem('stripe_customer_email', payload.parentEmail);
-				window.location.href = 'payment-intro.html';
+				window.location.href = 'subscription-intro.html';
 			} catch (error) {
 				alert(`Er is een fout opgetreden: ${error.message}`);
 				button.disabled = false;

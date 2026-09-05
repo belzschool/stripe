@@ -41,9 +41,12 @@ module.exports = async (req, res) => {
       parentName,
       parentEmail,
       invoiceName,
+      checkoutMode = 'combined',
       billingDetails = {},
       numChildren = {},
     } = req.body;
+
+    const subscriptionOnly = checkoutMode === 'subscription-only';
 
     const billingCountry = String(billingDetails.country || 'BE').toUpperCase();
     const billingStreet = String(billingDetails.street || '').trim();
@@ -204,7 +207,7 @@ module.exports = async (req, res) => {
           mipiOilelim: String(institution.metadata.mipiOilelim || 0),
         };
 
-        const recurringSession = isAfterSeptemberStart
+        const recurringSession = isAfterSeptemberStart && !subscriptionOnly
           ? null
           : await stripe.checkout.sessions.create({
               payment_method_types: ['sepa_debit'],
@@ -245,7 +248,7 @@ module.exports = async (req, res) => {
               cancel_url: `${req.headers.origin}/`,
             }, requestOptions);
 
-        if (isAfterSeptemberStart) {
+        if (isAfterSeptemberStart && !subscriptionOnly) {
           const septemberSession = await stripe.checkout.sessions.create({
             payment_method_types: ['card', 'bancontact'],
             mode: 'payment',
